@@ -28,4 +28,7 @@
     
     <!-- Whether to disable Smart Pixels on UDFPS -->
     <bool name="config_disableSmartPixelsOnUDFPS">false</bool>
+    
+    <!-- Notification counter -->
+    <integer name="status_bar_notification_info_maxnum">999</integer>
 </resources>
