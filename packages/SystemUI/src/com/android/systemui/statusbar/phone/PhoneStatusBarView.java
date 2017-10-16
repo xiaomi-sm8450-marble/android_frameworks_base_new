@@ -104,6 +104,8 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks, TunerS
      */
     private int mCutoutSideNudge = 0;
 
+    private boolean mBrightnessControlEnabled;
+
     public PhoneStatusBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mCommandQueue = Dependency.get(CommandQueue.class);
@@ -347,6 +349,14 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks, TunerS
             final boolean imeShown = (vis & InputMethodService.IME_VISIBLE) != 0;
             mRotationButtonController.getRotationButton().setCanShowRotationButton(!imeShown);
         }
+    }
+
+    public boolean getBrightnessControlEnabled() {
+        return mBrightnessControlEnabled;
+    }
+
+    public void setBrightnessControlEnabled(boolean enabled) {
+        mBrightnessControlEnabled = enabled;
     }
 
     public void updateResources() {
