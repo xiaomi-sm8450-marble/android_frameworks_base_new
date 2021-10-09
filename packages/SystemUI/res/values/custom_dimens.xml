@@ -117,4 +117,7 @@
     <dimen name="nowbar_height">72dp</dimen>
     <dimen name="nowbar_width">260dp</dimen>
     <dimen name="nowbar_margin_bottom">18dp</dimen>
+    
+    <!-- Maximum vertical offset of statusbar for burn-in protection -->
+    <dimen name="status_bar_offset_max_y">4dp</dimen>
 </resources>
