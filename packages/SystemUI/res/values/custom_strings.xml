@@ -72,4 +72,6 @@
     
     <!-- Statusbar Icons -->
     <string name="status_bar_nfc">NFC</string>
+    <string name="status_bar_data_saver">Data saver</string>
+    
 </resources>
