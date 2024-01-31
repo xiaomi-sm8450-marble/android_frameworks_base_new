@@ -38,4 +38,7 @@
     <dimen name="face_unlock_indicator_text_size">13sp</dimen>
     <dimen name="face_unlock_indicator_icon_size">18dp</dimen>
     <dimen name="face_unlock_indicator_icon_padding">9dp</dimen>
+    
+    <!-- HD calling icon -->
+    <dimen name="signal_icon_viewport_size">24dp</dimen>
 </resources>
