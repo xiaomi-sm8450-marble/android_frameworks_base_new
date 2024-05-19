@@ -40,6 +40,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -48,6 +49,7 @@ import android.graphics.Rect;
 import android.graphics.Region;
 import android.hardware.input.InputManager;
 import android.icu.text.SimpleDateFormat;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -326,6 +328,9 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private final GestureNavigationSettingsObserver mGestureNavigationSettingsObserver;
     private final NotificationShadeWindowController mNotificationShadeWindowController;
 
+    private ContentObserver mContentObserver;
+    private boolean mIsEdgeBackGestureLocked = false;
+
     private boolean mIsBackGestureArrowEnabled;
     private int mEdgeHapticIntensity;
 
@@ -536,6 +541,14 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
 
         updateCurrentUserResources();
         mNotificationShadeWindowController = notificationShadeWindowController;
+        
+        mContentObserver = new ContentObserver(mContext.getMainThreadHandler()) {
+            @Override
+            public void onChange(boolean selfChange, Uri uri, int userId) {
+                updateIsEdgeBackGestureLocked();
+                updateIsEnabled();
+            }
+        };
     }
 
     public void setStateChangeCallback(Runnable callback) {
@@ -639,6 +652,10 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
      */
     public void onNavBarAttached() {
         mIsAttached = true;
+        mContext.getContentResolver().registerContentObserver(Settings.Secure.getUriFor(
+                "lock_edge_back_gesture"), false, mContentObserver,
+                UserHandle.USER_ALL);
+        updateIsEdgeBackGestureLocked();
         mOverviewProxyService.addCallback(mQuickSwitchListener);
         mSysUiState.addCallback(mSysUiStateCallback);
         mInputManager.registerInputDeviceListener(
@@ -659,6 +676,7 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
      */
     public void onNavBarDetached() {
         mIsAttached = false;
+        mContext.getContentResolver().unregisterContentObserver(mContentObserver);
         mOverviewProxyService.removeCallback(mQuickSwitchListener);
         mSysUiState.removeCallback(mSysUiStateCallback);
         mInputManager.unregisterInputDeviceListener(mInputDeviceListener);
@@ -712,7 +730,7 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
 
             mIsGestureHandlingEnabled = mInGestureNavMode || (mUsingThreeButtonNav
                     && !mTrackpadsConnected.isEmpty());
-            boolean isEnabled = mIsAttached && mIsGestureHandlingEnabled;
+            boolean isEnabled = mIsAttached && mIsGestureHandlingEnabled && !mIsEdgeBackGestureLocked;
             if (isEnabled == mIsEnabled) {
                 return;
             }
@@ -1381,6 +1399,12 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         ev.setDisplayId(mContext.getDisplay().getDisplayId());
         return mContext.getSystemService(InputManager.class)
                 .injectInputEvent(ev, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    }
+
+    private void updateIsEdgeBackGestureLocked() {
+        mIsEdgeBackGestureLocked = Settings.Secure.getInt(
+                mContext.getContentResolver(),
+                "lock_edge_back_gesture", 0) == 1;
     }
 
     public void setInsets(int leftInset, int rightInset) {
