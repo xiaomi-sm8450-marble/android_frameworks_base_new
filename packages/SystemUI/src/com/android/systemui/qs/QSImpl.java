@@ -214,6 +214,7 @@ public class QSImpl implements QS, CommandQueue.Callbacks, StatusBarStateControl
      */
     public void onComponentCreated(QSComponent qsComponent, @Nullable Bundle savedInstanceState) {
         mRootView = qsComponent.getRootView();
+        MediaArtUtils.getInstance(mRootView.getContext()).setQSImpl(this);
 
         mQSPanelController = qsComponent.getQSPanelController();
         mQuickQSPanelController = qsComponent.getQuickQSPanelController();
@@ -568,8 +569,6 @@ public class QSImpl implements QS, CommandQueue.Callbacks, StatusBarStateControl
             if (DEBUG) Log.d(TAG, "setKeyguardShowing " + keyguardShowing);
             mLastQSExpansion = -1;
 
-             MediaArtUtils.getInstance(mRootView.getContext()).setQSCollapsed(true);
-
             if (mQSAnimator != null) {
                 mQSAnimator.setOnKeyguard(keyguardShowing);
             }
@@ -756,10 +755,9 @@ public class QSImpl implements QS, CommandQueue.Callbacks, StatusBarStateControl
             mQsMediaHost.setSquishFraction(mSquishinessFraction);
         }
         updateMediaPositions();
-         MediaArtUtils.getInstance(mRootView.getContext()).setQSCollapsed(isFullyCollapsed());
-        if (onKeyguardAndExpanded) {
+        if (!fullyCollapsed) {
             MediaArtUtils.getInstance(mRootView.getContext()).hideMediaArt();
-        } else if (onKeyguard) {
+        } else {
             MediaArtUtils.getInstance(mRootView.getContext()).updateMediaArtVisibility();   
         }
     }

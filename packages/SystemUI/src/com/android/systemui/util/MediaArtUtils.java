@@ -15,6 +15,8 @@
  */
 package com.android.systemui.util;
 
+import static com.android.systemui.statusbar.StatusBarState.KEYGUARD;
+
 import android.annotation.NonNull;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -51,6 +53,7 @@ import com.android.internal.graphics.ColorUtils;
 import com.android.systemui.Dependency;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
+import com.android.systemui.qs.QSImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,7 +80,6 @@ public class MediaArtUtils {
     private boolean mDozing;
     private boolean mPulsing;
     private boolean mAlbumArtShowing = false;
-    private boolean mIsFullyCollapsed = true;
     
     private MediaMetadata mMediaMetadata = null;
     private LayerDrawable currLayeredDrawable = null;
@@ -86,7 +88,7 @@ public class MediaArtUtils {
     private int mLsMediaFadeLevel = 40;
     private int mPreviousLsMediaFadeLevel = 40;
     private MediaMetadata mPreviousMediaMetadata = null;
-    private String mScrimState = "UNINITIALIZED";
+    private QSImpl mQSImpl = null;
     
     private ContentObserver mMediaArtObserver = new ContentObserver(null) {
         @Override
@@ -195,22 +197,18 @@ public class MediaArtUtils {
 
     private final StatusBarStateController.StateListener mStatusBarStateListener =
             new StatusBarStateController.StateListener() {
-                @Override
-                public void onStateChanged(int newState) {
-                    updateMediaArt();
+            @Override
+            public void onStateChanged(int newState) {}
+
+            @Override
+            public void onDozingChanged(boolean dozing) {
+                if (mDozing == dozing) {
+                    return;
                 }
-                @Override
-                public void onPulsingChanged(boolean pulsing) {
-                    mPulsing = pulsing;
-                    updateMediaArt();
-                }
-                @Override
-                public void onDozeAmountChanged(float linear, float eased) {
-                    final boolean fullyDozed = linear == 1f;
-                    mDozing = fullyDozed;
-                    updateMediaArt();
-                }
-            };
+                mDozing = dozing;
+                updateMediaArt();
+            }
+    };
 
     private boolean isMediaControllerAvailable() {
         return mController != null && !TextUtils.isEmpty(mController.getPackageName());
@@ -282,21 +280,17 @@ public class MediaArtUtils {
         return mLsMediaScrim;
     }
     
-    public void setScrimControllerState(String state) {
-        mScrimState = state;
-    }
-    
-    public void setQSCollapsed(boolean collapsed) {
-        mIsFullyCollapsed = collapsed;
+    public void setQSImpl(QSImpl qsImpl) {
+        mQSImpl = qsImpl;
     }
 
     private boolean canShowLsMediaArt() {
         return (mLsMediaScrim != null && mLsMediaEnabled
-                && mScrimState.equals("KEYGUARD")
-                && mIsFullyCollapsed
+                && mQSImpl != null && mQSImpl.isFullyCollapsed() 
+                && mStatusBarStateController.getState() == KEYGUARD
                 && mContext.getResources().getConfiguration().orientation 
                     != Configuration.ORIENTATION_LANDSCAPE 
-                && isMediaPlaying()) && (!mDozing || !mPulsing);
+                && isMediaPlaying()) && !mDozing;
     }
 
     public boolean albumArtVisible() {
