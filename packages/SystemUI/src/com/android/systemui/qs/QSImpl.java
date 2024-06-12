@@ -73,6 +73,8 @@ import com.android.systemui.util.Utils;
 
 import dalvik.annotation.optimization.NeverCompile;
 
+import com.android.systemui.util.MediaArtUtils;
+
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -566,6 +568,8 @@ public class QSImpl implements QS, CommandQueue.Callbacks, StatusBarStateControl
             if (DEBUG) Log.d(TAG, "setKeyguardShowing " + keyguardShowing);
             mLastQSExpansion = -1;
 
+             MediaArtUtils.getInstance(mRootView.getContext()).setQSCollapsed(true);
+
             if (mQSAnimator != null) {
                 mQSAnimator.setOnKeyguard(keyguardShowing);
             }
@@ -752,6 +756,12 @@ public class QSImpl implements QS, CommandQueue.Callbacks, StatusBarStateControl
             mQsMediaHost.setSquishFraction(mSquishinessFraction);
         }
         updateMediaPositions();
+         MediaArtUtils.getInstance(mRootView.getContext()).setQSCollapsed(isFullyCollapsed());
+        if (onKeyguardAndExpanded) {
+            MediaArtUtils.getInstance(mRootView.getContext()).hideMediaArt();
+        } else if (onKeyguard) {
+            MediaArtUtils.getInstance(mRootView.getContext()).updateMediaArtVisibility();   
+        }
     }
 
     private void setAlphaAnimationProgress(float progress) {

@@ -90,6 +90,8 @@ import com.android.systemui.wallpapers.data.repository.WallpaperRepository;
 import kotlinx.coroutines.CoroutineDispatcher;
 import kotlinx.coroutines.ExperimentalCoroutinesApi;
 
+import com.android.systemui.util.MediaArtUtils;
+
 import java.io.PrintWriter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -577,6 +579,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
 
         final ScrimState oldState = mState;
         mState = state;
+        MediaArtUtils.getInstance(mScrimBehind.getContext()).setScrimControllerState(mState.toString());
         Trace.traceCounter(Trace.TRACE_TAG_APP, "scrim_state", mState.ordinal());
 
         if (mCallback != null) {
@@ -1181,6 +1184,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                         AlarmTimeout.MODE_IGNORE_IF_SCHEDULED);
             });
         }
+        MediaArtUtils.getInstance(mScrimBehind.getContext()).updateMediaArtVisibility();
     }
 
     /**
