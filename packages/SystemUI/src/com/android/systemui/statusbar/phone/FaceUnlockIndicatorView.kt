@@ -24,47 +24,54 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
-import android.os.AsyncTask
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.AttributeSet
 import android.view.View
-import android.widget.ImageView
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.LinearInterpolator
-import android.view.animation.OvershootInterpolator
 
 import androidx.core.animation.doOnEnd
-import androidx.core.animation.doOnCancel
 
 import com.android.systemui.Dependency
 import com.android.systemui.plugins.statusbar.StatusBarStateController
-
+import com.android.systemui.statusbar.policy.ConfigurationController
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.android.systemui.res.R
 
-class FaceUnlockImageView @JvmOverloads constructor(
+class FaceUnlockIndicatorView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : ImageView(context, attrs, defStyleAttr) {
+) : ExtendedFloatingActionButton(context, attrs, defStyleAttr) {
 
     enum class State {
         SCANNING, NOT_VERIFIED, SUCCESS, HIDDEN
     }
 
-    private val DELAY_HIDE_DURATION = 1500
+    private val DELAY_HIDE_DURATION = 1500L
     private var currentState: State = State.HIDDEN
-    private var colorState: ColorStateList? = null
     private val startAnimation: ObjectAnimator = createScaleAnimation(start = true)
     private val dismissAnimation: ObjectAnimator = createScaleAnimation(start = false)
     private val scanningAnimation: ObjectAnimator = createScanningAnimation()
-    private val successAnimation: ObjectAnimator = createSuccessRotationAnimation()
+    private val successAnimation: ObjectAnimator = createSuccessScaleAnimation()
     private val failureShakeAnimation: ObjectAnimator = createShakeAnimation(10f)
     private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     private val animations = listOf(failureShakeAnimation, dismissAnimation, scanningAnimation, successAnimation, startAnimation)
     private var mDozing = false
     private val statusBarStateController: StatusBarStateController = Dependency.get(StatusBarStateController::class.java)
+    private val configurationController: ConfigurationController = Dependency.get(ConfigurationController::class.java)
+    private var isNightMode = false
+
+    private val configurationListener = object : ConfigurationController.ConfigurationListener {
+        override fun onUiModeChanged() {
+            updateColor()
+        }
+        override fun onThemeChanged() {
+            updateColor()
+        }
+    }
 
     companion object {
-        private var instance: FaceUnlockImageView? = null
+        private var instance: FaceUnlockIndicatorView? = null
 
         @JvmStatic
         fun setBouncerState(state: State) {
@@ -74,12 +81,12 @@ class FaceUnlockImageView @JvmOverloads constructor(
         }
 
         @JvmStatic
-        fun setInstance(instance: FaceUnlockImageView) {
+        fun setInstance(instance: FaceUnlockIndicatorView) {
             this.instance = instance
         }
 
         @JvmStatic
-        fun getInstance(): FaceUnlockImageView? {
+        fun getInstance(): FaceUnlockIndicatorView? {
             return instance
         }
     }
@@ -98,22 +105,40 @@ class FaceUnlockImageView @JvmOverloads constructor(
         }
     }
 
-    init {
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        setInstance(this)
         statusBarStateController.addCallback(statusBarStateListener)
+        configurationController.addCallback(configurationListener)
         statusBarStateListener.onDozingChanged(statusBarStateController.isDozing())
         visibility = View.GONE
         updateFaceIconState()
-    }
-
-    public override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        setInstance(this)
         updateColor()
     }
 
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        statusBarStateController.removeCallback(statusBarStateListener)
+        configurationController.removeCallback(configurationListener)
+        cancelAllAnimations()
+        clearAnimationListeners()
+    }
+
     fun updateColor() {
-        imageTintList = ColorStateList.valueOf(Color.WHITE)
-        backgroundTintList = ColorStateList.valueOf(Color.parseColor("#99000000"))
+        isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        iconPadding = context.resources.getDimensionPixelSize(R.dimen.face_unlock_indicator_icon_padding)
+        iconSize = context.resources.getDimensionPixelSize(R.dimen.face_unlock_indicator_icon_size)
+        iconTint = ColorStateList.valueOf(
+            context.getColor(
+                if (isNightMode) R.color.island_title_color_dark else R.color.island_title_color_light
+            )
+        )
+        backgroundTintList = ColorStateList.valueOf(
+            context.getColor(
+                if (isNightMode) R.color.island_background_color_dark else R.color.island_background_color_light
+            )
+        )
+        setTextColor(iconTint)
     }
 
     fun setState(state: State) {
@@ -129,12 +154,19 @@ class FaceUnlockImageView @JvmOverloads constructor(
             visibility = View.GONE
             return
         }
-        setImageResource(when (currentState) {
-            State.SCANNING -> R.drawable.face_scanning
-            State.NOT_VERIFIED -> R.drawable.face_not_verified
-            State.SUCCESS -> R.drawable.face_success
-            State.HIDDEN -> R.drawable.face_scanning
-        })
+        icon = when (currentState) {
+            State.SCANNING -> context.getDrawable(R.drawable.face_scanning)
+            State.NOT_VERIFIED -> context.getDrawable(R.drawable.face_not_verified)
+            State.SUCCESS -> context.getDrawable(R.drawable.face_success)
+            State.HIDDEN -> null
+        }
+
+        text = when (currentState) {
+            State.SCANNING -> context.getString(R.string.face_unlock_recognizing)
+            State.NOT_VERIFIED -> context.getString(R.string.keyguard_face_failed)
+            State.SUCCESS -> context.getString(R.string.keyguard_face_successful_unlock)
+            State.HIDDEN -> ""
+        }
     }
 
     private fun createScanningAnimation(): ObjectAnimator {
@@ -147,8 +179,10 @@ class FaceUnlockImageView @JvmOverloads constructor(
         }
     }
 
-    private fun createSuccessRotationAnimation(): ObjectAnimator {
-        return ObjectAnimator.ofFloat(this, View.ROTATION_Y, 0f, 360f).apply {
+    private fun createSuccessScaleAnimation(): ObjectAnimator {
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.5f, 1f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.5f, 1f)
+        return ObjectAnimator.ofPropertyValuesHolder(this, scaleX, scaleY).apply {
             duration = 800
             interpolator = AccelerateDecelerateInterpolator()
         }
@@ -187,6 +221,12 @@ class FaceUnlockImageView @JvmOverloads constructor(
 
     private fun cancelAllAnimations() {
         animations.forEach { it.cancel() }
+    }
+
+    private fun clearAnimationListeners() {
+        animations.forEach { animator ->
+            animator.removeAllListeners()
+        }
     }
 
     private fun handleAnimationForState(state: State) {
