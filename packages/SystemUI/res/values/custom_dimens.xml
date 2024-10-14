@@ -21,4 +21,9 @@
     <!-- Udfps fingerprint animation -->
     <dimen name="udfps_animation_size">280dp</dimen>
     <dimen name="udfps_animation_offset">0dp</dimen>
+    
+    <!-- Lockscreen Clock/AOD -->  
+    <dimen name="custom_aod_image_size">180dp</dimen>
+    <dimen name="custom_clock_frame_margin_top">0dp</dimen>
+    <dimen name="keyguard_status_area_margin_top">0dp</dimen>
 </resources>
