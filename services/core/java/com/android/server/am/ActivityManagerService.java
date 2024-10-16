@@ -19084,4 +19084,13 @@ public class ActivityManagerService extends IActivityManager.Stub
     Freezer getFreezer() {
         return mFreezer;
     }
+    
+    @Override
+    public boolean isThreeFingersSwipeActive() {
+        synchronized (this) {
+            return Settings.System.getInt(
+                mContext.getContentResolver(),
+                "three_finger_gesture_active", 0) != 0;
+        }
+    }
 }
