@@ -514,6 +514,8 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private boolean mDoubleTapToSleepEnabled;
     private GestureDetector mDoubleTapGesture;
 
+    private boolean mIsLockscreenDoubleTapEnabled;
+
     private final KeyguardIndicationController mKeyguardIndicationController;
     private int mHeadsUpInset;
     private boolean mHeadsUpPinnedMode;
@@ -963,6 +965,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                 } else if (uri == null || uri.equals(Settings.System.getUriFor("qs_haptics_intensity"))) {
                     mQsHapticsIntensity = Settings.System.getInt(mContentResolver,
                             "qs_haptics_intensity",0);
+                } else if (uri == null || uri.equals(Settings.System.getUriFor("double_tap_sleep_lockscreen"))) {
+                    mIsLockscreenDoubleTapEnabled = Settings.System.getInt(mContentResolver,
+                            "double_tap_sleep_lockscreen", 0) != 0;
                 }
             }
         };
@@ -5127,7 +5132,10 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                 return false;
             }
 
-            if (mDoubleTapToSleepEnabled && !mPulsing && !mDozing) {
+            if ((mIsLockscreenDoubleTapEnabled && !mPulsing && !mDozing
+                    && mBarState == StatusBarState.KEYGUARD) ||
+                    (!mQsController.getExpanded() && mDoubleTapToSleepEnabled
+                    && event.getY() < mStatusBarHeaderHeightKeyguard)) {
                 mDoubleTapGesture.onTouchEvent(event);
             }
 
