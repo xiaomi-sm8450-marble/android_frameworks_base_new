@@ -38,7 +38,6 @@ import com.android.systemui.qs.QSPanel.QSTileLayout;
 import com.android.systemui.qs.TouchAnimator.Builder;
 import com.android.systemui.qs.dagger.QSScope;
 import com.android.systemui.qs.tileimpl.HeightOverrideable;
-import com.android.systemui.tuner.TunerService;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 
 import java.util.ArrayList;
@@ -66,12 +65,9 @@ import kotlin.jvm.functions.Function1;
 @QSScope
 public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener,
         TouchAnimator.Listener, OnLayoutChangeListener,
-        OnAttachStateChangeListener, TunerService.Tunable {
+        OnAttachStateChangeListener {
 
     private static final String TAG = "QSAnimator";
-
-    public static final String QS_TILE_UI_STYLE =
-            "system:" + Settings.System.QS_TILE_UI_STYLE;
 
     private static final int ANIMATORS_UPDATE_DELAY_MS = 100;
     private static final float EXPANDED_TILE_DELAY = .86f;
@@ -144,7 +140,6 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     private float mLastPosition;
     private final QSHost mHost;
     private final DelayableExecutor mExecutor;
-    private final TunerService mTunerService;
     private boolean mShowCollapsedOnKeyguard;
     private int mQQSTop;
     private boolean isA11Style;
@@ -152,16 +147,11 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     private int[] mTmpLoc1 = new int[2];
     private int[] mTmpLoc2 = new int[2];
 
-    private final Function1<Boolean, Unit> mMediaHostVisibilityListener = (visible) -> {
-        requestAnimatorUpdate();
-        return null;
-    };
-
     @Inject
     public QSAnimator(@RootView View rootView, QuickQSPanel quickPanel,
             QSPanelController qsPanelController,
             QuickQSPanelController quickQSPanelController, QSHost qsTileHost,
-            @Main DelayableExecutor executor, TunerService tunerService,
+            @Main DelayableExecutor executor,
             QSExpansionPathInterpolator qsExpansionPathInterpolator) {
         mQsRootView = rootView;
         mQuickQsPanel = quickPanel;
@@ -169,7 +159,6 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
         mQuickQSPanelController = quickQSPanelController;
         mHost = qsTileHost;
         mExecutor = executor;
-        mTunerService = tunerService;
         mQSExpansionPathInterpolator = qsExpansionPathInterpolator;
         mHost.addCallback(this);
         mQsPanelController.addOnAttachStateChangeListener(this);
@@ -227,29 +216,13 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
 
     @Override
     public void onViewAttachedToWindow(@NonNull View view) {
-        mTunerService.addTunable(this, QS_TILE_UI_STYLE);
         updateAnimators();
         setCurrentPosition();
-        mQuickQSPanelController.mMediaHost.addVisibilityChangeListener(mMediaHostVisibilityListener);
     }
 
     @Override
     public void onViewDetachedFromWindow(@NonNull View v) {
         mHost.removeCallback(this);
-        mTunerService.removeTunable(this);
-        mQuickQSPanelController.mMediaHost.removeVisibilityChangeListener(mMediaHostVisibilityListener);
-    }
-
-    @Override
-    public void onTuningChanged(String key, String newValue) {
-        switch (key) {
-            case QS_TILE_UI_STYLE:
-                isA11Style =
-                     TunerService.parseInteger(newValue, 0) != 0;
-                break;
-            default:
-                break;
-         }
     }
 
     private void addNonFirstPageAnimators(int page) {
@@ -307,6 +280,7 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     }
 
     private void updateAnimators() {
+        isA11Style = com.android.internal.util.systemui.qs.QSLayoutUtils.getQsUiStyle(mHost.getContext()) != 0;
         mNeedsAnimatorUpdate = false;
         TouchAnimator.Builder firstPageBuilder = new Builder();
         TouchAnimator.Builder translationYBuilder = new Builder();
