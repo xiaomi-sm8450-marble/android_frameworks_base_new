@@ -400,6 +400,16 @@ public class StageTaskListener implements ShellTaskOrganizer.TaskListener {
         }
     }
 
+    void evictOtherInvisibleChildren(WindowContainerTransaction wct, int taskId) {
+        for (int i = mChildrenTaskInfo.size() - 1; i >= 0; i--) {
+            final ActivityManager.RunningTaskInfo taskInfo = mChildrenTaskInfo.valueAt(i);
+            if (taskId == taskInfo.taskId) continue;
+            if (taskInfo.isVisibleRequested) continue;
+            ProtoLog.d(WM_SHELL_SPLIT_SCREEN, "Evict other invisible child: task=%d", taskId);
+            wct.reparent(taskInfo.token, null /* parent */, false /* onTop */);
+        }
+    }
+
     void evictNonOpeningChildren(RemoteAnimationTarget[] apps, WindowContainerTransaction wct) {
         ProtoLog.d(WM_SHELL_SPLIT_SCREEN, "evictNonOpeningChildren");
         final SparseArray<ActivityManager.RunningTaskInfo> toBeEvict = mChildrenTaskInfo.clone();

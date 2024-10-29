@@ -2811,14 +2811,16 @@ public class StageCoordinator implements SplitLayout.SplitLayoutHandler,
             }
             if (finalMainChild != null) {
                 if (!mainNotContainOpenTask) {
-                    mMainStage.evictOtherChildren(callbackWct, finalMainChild.getTaskInfo().taskId);
+                    mMainStage.evictOtherInvisibleChildren(callbackWct,
+                            finalMainChild.getTaskInfo().taskId);
                 } else {
                     mMainStage.evictInvisibleChildren(callbackWct);
                 }
             }
             if (finalSideChild != null) {
                 if (!sideNotContainOpenTask) {
-                    mSideStage.evictOtherChildren(callbackWct, finalSideChild.getTaskInfo().taskId);
+                    mSideStage.evictOtherInvisibleChildren(callbackWct,
+                            finalSideChild.getTaskInfo().taskId);
                 } else {
                     mSideStage.evictInvisibleChildren(callbackWct);
                 }
