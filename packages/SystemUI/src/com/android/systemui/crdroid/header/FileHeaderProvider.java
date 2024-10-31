@@ -93,12 +93,35 @@ public class FileHeaderProvider implements
         if (mContext == null) return;
         String path = getCustomHeaderPath();
         if (path == null || path.isEmpty()) return;
-        final Bitmap bitmap = BitmapFactory.decodeFile(path);
+        Bitmap bitmap = BitmapFactory.decodeFile(path);
         if (bitmap == null) {
-            Log.d(TAG + "loadHeaderImage: ", "Failed to decode bitmap from file");
             return;
         }
-        mImage = new BitmapDrawable(mContext.getResources(), bitmap);
+        int maxDimension = 500;
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        if (width > maxDimension || height > maxDimension) {
+            float scale = Math.min((float) maxDimension / width, (float) maxDimension / height);
+            int newWidth = Math.round(scale * width);
+            int newHeight = Math.round(scale * height);
+            bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+        }
+        try (java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream()) {
+            boolean success = bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 90, byteArrayOutputStream);
+            if (success) {
+                byte[] compressedBitmapData = byteArrayOutputStream.toByteArray();
+                mImage = new BitmapDrawable(mContext.getResources(),
+                        BitmapFactory.decodeByteArray(compressedBitmapData, 0, compressedBitmapData.length));
+            } else {
+                Log.e(TAG, "Failed to compress bitmap");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error while processing bitmap", e);
+        } finally {
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.recycle();
+            }
+        }
     }
 
     @Override
