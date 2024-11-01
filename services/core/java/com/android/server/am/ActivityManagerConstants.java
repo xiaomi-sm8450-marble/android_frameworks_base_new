@@ -1021,6 +1021,10 @@ final class ActivityManagerConstants extends ContentObserver {
 
     private static final Uri FORCE_ENABLE_PSS_PROFILING_URI =
             Settings.Global.getUriFor(Settings.Global.FORCE_ENABLE_PSS_PROFILING);
+            
+    private static final String DEVICE_POWER_MODE_KEY = "device_power_mode";
+
+    private static final Uri DEVICE_POWER_MODE_URI = Settings.System.getUriFor(DEVICE_POWER_MODE_KEY);
 
     private static final Uri ENABLE_USE_APP_INFO_NOT_LAUNCHED_URI =
             Settings.Global.getUriFor(Settings.Global.ENABLE_USE_APP_INFO_NOT_LAUNCHED);
@@ -1488,6 +1492,7 @@ final class ActivityManagerConstants extends ContentObserver {
         }
         mResolver.registerContentObserver(FORCE_ENABLE_PSS_PROFILING_URI, false, this);
         mResolver.registerContentObserver(ENABLE_USE_APP_INFO_NOT_LAUNCHED_URI, false, this);
+        mResolver.registerContentObserver(DEVICE_POWER_MODE_URI, false, this);
         updateConstants();
         if (mSystemServerAutomaticHeapDumpEnabled) {
             updateEnableAutomaticSystemServerHeapDumps();
@@ -1553,6 +1558,8 @@ final class ActivityManagerConstants extends ContentObserver {
             updateForceEnablePssProfiling();
         } else if (ENABLE_USE_APP_INFO_NOT_LAUNCHED_URI.equals(uri)) {
             updateEnableUseAppInfoNotLaunched();
+        } else if (DEVICE_POWER_MODE_URI.equals(uri)) {
+            updateMaxCachedProcesses();
         }
     }
 
@@ -2046,17 +2053,25 @@ final class ActivityManagerConstants extends ContentObserver {
     }
 
     private void updateMaxCachedProcesses() {
-        final long ramBytes = new com.android.internal.util.MemInfoReader().getTotalSize();
-        if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(6)) {
-            CUR_MAX_CACHED_PROCESSES = 48;
-        } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(8)) {
-            CUR_MAX_CACHED_PROCESSES = 64;
-        } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(12)) {
-            CUR_MAX_CACHED_PROCESSES = 128;
-        } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(16)) {
-            CUR_MAX_CACHED_PROCESSES = 256;
+        String powerMode = Settings.System.getString(mResolver, DEVICE_POWER_MODE_KEY);
+        if (powerMode == null || powerMode.isEmpty()) {
+            powerMode = "default";
+        }
+        if ("gameboost".equals(powerMode)) {
+            CUR_MAX_CACHED_PROCESSES = 8;
         } else {
-            CUR_MAX_CACHED_PROCESSES = 1024;
+            final long ramBytes = new com.android.internal.util.MemInfoReader().getTotalSize();
+            if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(6)) {
+                CUR_MAX_CACHED_PROCESSES = 48;
+            } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(8)) {
+                CUR_MAX_CACHED_PROCESSES = 64;
+            } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(12)) {
+                CUR_MAX_CACHED_PROCESSES = 128;
+            } else if (ramBytes <= android.util.DataUnit.GIGABYTES.toBytes(16)) {
+                CUR_MAX_CACHED_PROCESSES = 256;
+            } else {
+                CUR_MAX_CACHED_PROCESSES = 1024;
+            }
         }
         CUR_MAX_EMPTY_PROCESSES = computeEmptyProcessLimit(CUR_MAX_CACHED_PROCESSES);
 
