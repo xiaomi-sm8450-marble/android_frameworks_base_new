@@ -135,6 +135,7 @@ public class QSPanel extends LinearLayout implements Tunable {
 
     @Nullable
     protected View mFooter;
+    private View mQsControlsLayoutShade;
 
     @Nullable
     private PageIndicator mFooterPageIndicator;
@@ -515,7 +516,9 @@ public class QSPanel extends LinearLayout implements Tunable {
 
     protected void updatePadding() {
         final Resources res = mContext.getResources();
-        int paddingTop = res.getDimensionPixelSize(R.dimen.qs_panel_padding_top);
+        int paddingTop = res.getDimensionPixelSize(TileUtils.canShowQsWidgets(mContext)
+            ? R.dimen.qs_controls_padding_top
+            : R.dimen.qs_panel_padding_top);
         int paddingBottom = res.getDimensionPixelSize(R.dimen.qs_panel_padding_bottom);
         setPaddingRelative(getPaddingStart(),
                 mSceneContainerEnabled ? 0 : paddingTop,
@@ -543,6 +546,7 @@ public class QSPanel extends LinearLayout implements Tunable {
     protected void onFinishInflate() {
         super.onFinishInflate();
         mFooter = findViewById(R.id.qs_footer);
+        mQsControlsLayoutShade = findViewById(R.id.qs_controls_layout_shade);
     }
 
     private void updateHorizontalLinearLayoutMargins() {
@@ -583,6 +587,12 @@ public class QSPanel extends LinearLayout implements Tunable {
 
     private void switchAllContentToParent(ViewGroup parent, QSTileLayout newLayout) {
         int index = parent == this ? mMovableContentStartIndex : 0;
+
+        if (mQsControlsLayoutShade != null 
+            && TileUtils.isQsWidgetsEnabled(mContext)) {
+            switchToParent(mQsControlsLayoutShade, parent, index);
+            index++;
+        }
 
         if (mBrightnessView != null && mTop) {
             switchToParent(mBrightnessView, parent, index);
