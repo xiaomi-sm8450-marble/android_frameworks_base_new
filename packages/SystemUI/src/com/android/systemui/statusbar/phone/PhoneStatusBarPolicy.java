@@ -105,8 +105,6 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
-import lineageos.providers.LineageSettings;
-
 /**
  * This class contains all of the policy about which icons are installed in the status bar at boot
  * time. It goes through the normal API for icons, even though it probably strictly doesn't need to.
@@ -127,8 +125,8 @@ public class PhoneStatusBarPolicy
 
     static final int LOCATION_STATUS_ICON_ID = PrivacyType.TYPE_LOCATION.getIconId();
 
-    private static final String NETWORK_TRAFFIC_LOCATION =
-            "lineagesecure:" + LineageSettings.Secure.NETWORK_TRAFFIC_LOCATION;
+    private static final String NETWORK_TRAFFIC_ENABLED =
+            "system:" + Settings.System.NETWORK_TRAFFIC_ENABLED;
 
     private final String mSlotCast;
     private final String mSlotHotspot;
@@ -400,8 +398,8 @@ public class PhoneStatusBarPolicy
         mIconController.setIconVisibility(mSlotFirewall, mFirewallVisible);
 
         // network traffic
-        mShowNetworkTraffic = LineageSettings.Secure.getIntForUser(mContext.getContentResolver(),
-            NETWORK_TRAFFIC_LOCATION, 0, UserHandle.USER_CURRENT) == 1;
+        mShowNetworkTraffic = Settings.System.getIntForUser(mContext.getContentResolver(),
+            NETWORK_TRAFFIC_ENABLED, 0, UserHandle.USER_CURRENT) == 1;
         updateNetworkTraffic();
 
         mRotationLockController.addCallback(this);
@@ -437,7 +435,7 @@ public class PhoneStatusBarPolicy
 
         mCommandQueue.addCallback(this);
 
-        mTunerService.addTunable(this, NETWORK_TRAFFIC_LOCATION);
+        mTunerService.addTunable(this, NETWORK_TRAFFIC_ENABLED);
 
         // Get initial user setup state
         onUserSetupChanged();
@@ -489,9 +487,9 @@ public class PhoneStatusBarPolicy
     @Override
     public void onTuningChanged(String key, String newValue) {
         switch (key) {
-            case NETWORK_TRAFFIC_LOCATION:
+            case NETWORK_TRAFFIC_ENABLED:
                 mShowNetworkTraffic =
-                        TunerService.parseInteger(newValue, 0) == 1;
+                        TunerService.parseIntegerSwitch(newValue, false);
                 updateNetworkTraffic();
                 break;
             default:
