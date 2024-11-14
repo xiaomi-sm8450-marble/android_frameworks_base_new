@@ -956,23 +956,17 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         });
         mNPVCSettingsObserver = new ContentObserver(handler) {
             @Override
-            public void onChange(boolean selfChange, Uri uri) {
-                if (uri == null || uri.equals(LineageSettings.System.getUriFor(
-                    LineageSettings.System.DOUBLE_TAP_SLEEP_GESTURE))) {
-                    mDoubleTapToSleepEnabled = LineageSettings.System.getInt(mContentResolver,
-                            LineageSettings.System.DOUBLE_TAP_SLEEP_GESTURE,
-                            mResources.getBoolean(org.lineageos.platform.internal.R.bool.
-                                    config_dt2sGestureEnabledByDefault) ? 1 : 0) != 0;
-                } else if (uri == null || uri.equals(Settings.System.getUriFor("qs_haptics_intensity"))) {
-                    mQsHapticsIntensity = Settings.System.getInt(mContentResolver,
-                            "qs_haptics_intensity",0);
-                } else if (uri == null || uri.equals(Settings.System.getUriFor("double_tap_sleep_lockscreen"))) {
-                    mIsLockscreenDoubleTapEnabled = Settings.System.getInt(mContentResolver,
-                            "double_tap_sleep_lockscreen", 0) != 0;
-                } else if (uri == null || uri.equals(Settings.System.getUriFor("fling_animation_duration"))) {
-                    mFlingAnimationDuration = Settings.System.getInt(mContentResolver,
-                            "fling_animation_duration", 350);
-                }
+            public void onChange(boolean selfChange) {
+                mDoubleTapToSleepEnabled = LineageSettings.System.getInt(mContentResolver,
+                        LineageSettings.System.DOUBLE_TAP_SLEEP_GESTURE,
+                        mResources.getBoolean(org.lineageos.platform.internal.R.bool.
+                                config_dt2sGestureEnabledByDefault) ? 1 : 0) != 0;
+                mQsHapticsIntensity = Settings.System.getInt(mContentResolver,
+                        "qs_haptics_intensity",1);
+                mIsLockscreenDoubleTapEnabled = Settings.System.getInt(mContentResolver,
+                        "double_tap_sleep_lockscreen", 1) != 0;
+                mFlingAnimationDuration = Settings.System.getInt(mContentResolver,
+                        "fling_animation_duration", 350);
             }
         };
         mConversationNotificationManager = conversationNotificationManager;
@@ -4761,7 +4755,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     "fling_animation_duration"), false,
                     mNPVCSettingsObserver);
-            mNPVCSettingsObserver.onChange(true, null);
+            mNPVCSettingsObserver.onChange(true);
             // Theme might have changed between inflating this view and attaching it to the
             // window, so
             // force a call to onThemeChanged
