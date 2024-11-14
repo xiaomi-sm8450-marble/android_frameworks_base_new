@@ -4753,6 +4753,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                     LineageSettings.System.DOUBLE_TAP_SLEEP_GESTURE), false,
                     mNPVCSettingsObserver);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
+                    "double_tap_sleep_lockscreen"), false,
+                    mNPVCSettingsObserver);
+            mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     "qs_haptics_intensity"), false,
                     mNPVCSettingsObserver);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
