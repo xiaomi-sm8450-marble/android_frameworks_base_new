@@ -515,6 +515,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private GestureDetector mDoubleTapGesture;
 
     private boolean mIsLockscreenDoubleTapEnabled;
+    private int mFlingAnimationDuration;
 
     private final KeyguardIndicationController mKeyguardIndicationController;
     private int mHeadsUpInset;
@@ -968,6 +969,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                 } else if (uri == null || uri.equals(Settings.System.getUriFor("double_tap_sleep_lockscreen"))) {
                     mIsLockscreenDoubleTapEnabled = Settings.System.getInt(mContentResolver,
                             "double_tap_sleep_lockscreen", 0) != 0;
+                } else if (uri == null || uri.equals(Settings.System.getUriFor("fling_animation_duration"))) {
+                    mFlingAnimationDuration = Settings.System.getInt(mContentResolver,
+                            "fling_animation_duration", 350);
                 }
             }
         };
@@ -2274,6 +2278,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                 }
             }
         });
+        if (mFlingAnimationDuration != 350) {
+            animator.setDuration(mFlingAnimationDuration);
+        }
         if (!mScrimController.isScreenOn() && !mForceFlingAnimationForTest) {
             animator.setDuration(1);
         }
@@ -4747,6 +4754,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                     mNPVCSettingsObserver);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     "qs_haptics_intensity"), false,
+                    mNPVCSettingsObserver);
+            mContentResolver.registerContentObserver(Settings.System.getUriFor(
+                    "fling_animation_duration"), false,
                     mNPVCSettingsObserver);
             mNPVCSettingsObserver.onChange(true, null);
             // Theme might have changed between inflating this view and attaching it to the
