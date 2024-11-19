@@ -61,8 +61,10 @@ import com.android.systemui.plugins.ActivityStarter;
 import com.android.systemui.bluetooth.qsdialog.BluetoothTileDialogViewModel;
 import com.android.systemui.statusbar.connectivity.AccessPointController;
 import com.android.systemui.statusbar.connectivity.NetworkController;
+import com.android.systemui.qs.QSImpl;
 import com.android.systemui.qs.tiles.dialog.InternetDialogManager;
 import com.android.systemui.media.dialog.MediaOutputDialogManager;
+import com.android.systemui.statusbar.phone.ScrimController;
 import com.android.systemui.statusbar.policy.ConfigurationController;
 import com.android.systemui.statusbar.policy.FlashlightController;
 
@@ -170,6 +172,8 @@ public class Dependency {
     @Inject Lazy<FlashlightController> mFlashlightController;
     @Inject Lazy<BluetoothTileDialogViewModel> mBluetoothTileDialogViewModel;
     @Inject Lazy<HotspotController> mHotspotController;
+    @Inject Lazy<QSImpl> mQSImpl;
+    @Inject Lazy<ScrimController> mScrimController;
 
     @Inject
     public Dependency() {
@@ -224,6 +228,8 @@ public class Dependency {
         mProviders.put(BluetoothTileDialogViewModel.class, mBluetoothTileDialogViewModel::get);
         mProviders.put(ActivityStarter.class, mActivityStarter::get);
         mProviders.put(HotspotController.class, mHotspotController::get);
+        mProviders.put(QSImpl.class, mQSImpl::get);
+        mProviders.put(ScrimController.class, mScrimController::get);
 
         Dependency.setInstance(this);
     }
