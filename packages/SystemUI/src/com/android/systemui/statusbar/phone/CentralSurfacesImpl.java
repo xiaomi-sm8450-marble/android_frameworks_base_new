@@ -949,6 +949,10 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                             }
                         });
                     }
+                } else if (uri.equals(Settings.System.getUriFor(Settings.System.QS_TRANSPARENCY))) {
+                    int transparencyAlpha =
+                            Settings.System.getInt(mContext.getContentResolver(), Settings.System.QS_TRANSPARENCY, 100);
+                    mScrimController.setCustomScrimAlpha(transparencyAlpha);
                 }
             }
         };
@@ -956,8 +960,11 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 LineageSettings.System.getUriFor(LineageSettings.System.FORCE_SHOW_NAVBAR), false, contentObserver);
         mContext.getContentResolver().registerContentObserver(
                 Settings.Secure.getUriFor(Settings.Secure.PULSE_ON_NEW_TRACKS), false, contentObserver);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.QS_TRANSPARENCY), false, contentObserver);
         contentObserver.onChange(true, LineageSettings.System.getUriFor(LineageSettings.System.FORCE_SHOW_NAVBAR));
         contentObserver.onChange(true, Settings.Secure.getUriFor(Settings.Secure.PULSE_ON_NEW_TRACKS));
+        contentObserver.onChange(true, Settings.System.getUriFor(Settings.System.QS_TRANSPARENCY));
 
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 
