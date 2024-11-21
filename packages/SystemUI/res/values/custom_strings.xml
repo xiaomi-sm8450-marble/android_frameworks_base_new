@@ -65,4 +65,8 @@
     
     <!-- DataSwitch Tile -->
     <string name="qs_data_switch_label">Switch data card</string>
+    
+    <!-- Music QS Tile -->
+    <string name="quick_settings_music_label">Music</string>
+    <string name="quick_settings_music_unavailable">Unavailable</string>
 </resources>
