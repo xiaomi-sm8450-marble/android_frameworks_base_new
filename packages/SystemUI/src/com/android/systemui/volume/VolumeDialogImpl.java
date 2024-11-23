@@ -1499,7 +1499,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             for (AppVolume av : audioManager.listAppVolumes()) {
                 if (av.isActive()) {
                     ret = true;
-            break;
+                    break;
                 }
             }
         }
@@ -1511,6 +1511,14 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             mAppVolumeView.setVisibility(shouldShowAppVolume() ? VISIBLE : GONE);
         }
         if (mAppVolumeIcon != null) {
+            String packageName = getActiveVolumeApp();
+            if (!TextUtils.isEmpty(packageName)) {
+                try {
+                    Drawable appIcon = mContext.getPackageManager().getApplicationIcon(packageName);
+                    mAppVolumeIcon.setImageDrawable(appIcon);
+                    mAppVolumeIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                } catch (PackageManager.NameNotFoundException e) {}
+            }
             mAppVolumeIcon.setOnClickListener(v -> {
                 Events.writeEvent(Events.EVENT_SETTINGS_CLICK);
                 dismissH(DISMISS_REASON_SETTINGS_CLICKED);
@@ -1519,6 +1527,17 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                         mVolumePanelNavigationInteractor.getAppVolumeRoute());
             });
         }
+    }
+    
+    public String getActiveVolumeApp() {
+        String mAppVolumeActivePackageName = "";
+        for (AppVolume av : mController.getAudioManager().listAppVolumes()) {
+            if (av.isActive()) {
+                mAppVolumeActivePackageName = av.getPackageName();
+                break;
+            }
+        }
+        return mAppVolumeActivePackageName;
     }
 
     public void initRingerH() {
