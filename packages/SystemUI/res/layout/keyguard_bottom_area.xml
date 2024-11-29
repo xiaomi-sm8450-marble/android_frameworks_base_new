@@ -52,7 +52,7 @@
             android:visibility="gone" />
 
     </LinearLayout>
-
+        
     <LinearLayout
         android:id="@id/keyguard_indication_area"
         android:layout_width="match_parent"
