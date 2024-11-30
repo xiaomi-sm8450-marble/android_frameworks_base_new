@@ -55,8 +55,8 @@
     <!-- QS Brightness slider -->
     <dimen name="qs_top_brightness_margin_top">4dp</dimen>
     <dimen name="qs_top_brightness_margin_bottom">8dp</dimen>
-    <dimen name="qs_bottom_brightness_margin_top">8dp</dimen>
-    <dimen name="qs_bottom_brightness_margin_bottom">4dp</dimen>
+    <dimen name="qs_bottom_brightness_margin_top">0dp</dimen>
+    <dimen name="qs_bottom_brightness_margin_bottom">16dp</dimen>
 
     <!-- QS A11 Style -->
     <dimen name="custom_qs_panel_padding_top">0dp</dimen>
