@@ -89,4 +89,10 @@
 
     <!-- Sleep Mode -->
     <string name="quick_settings_sleep_mode_label">Sleep Mode</string>
+    
+    <!-- Volume Tile -->
+    <string name="quick_settings_volume_tile_label">Volume</string>
+    <string name="quick_settings_volume_tile_muted">Muted</string>
+    <string name="quick_settings_volume_tile_low">Low</string>
+    <string name="quick_settings_volume_tile_high">High</string>
 </resources>
