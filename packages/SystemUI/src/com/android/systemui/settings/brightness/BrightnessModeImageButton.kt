@@ -25,6 +25,10 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.widget.ImageButton
 
+import androidx.core.content.ContextCompat
+
+import com.android.systemui.res.R
+
 import com.android.settingslib.Utils
 
 class BrightnessModeImageButton @JvmOverloads constructor(
@@ -36,7 +40,7 @@ class BrightnessModeImageButton @JvmOverloads constructor(
     private val contentResolver = context.contentResolver
     private val translucentStyles = setOf(1, 2, 3, 9)
 
-    private val settingsObserver = object : ContentObserver(Handler(context.mainLooper)) {
+    private val settingsObserver = object : ContentObserver(null) {
         override fun onChange(selfChange: Boolean) {
             updateTint()
         }
@@ -79,9 +83,11 @@ class BrightnessModeImageButton @JvmOverloads constructor(
             )
         )
         val tintColor = if (isAutomatic && !translucentStyleEnabled) {
-            Utils.getColorAttrDefaultColor(context, android.R.attr.textColorPrimaryInverse)
+            ContextCompat.getColor(context, R.color.qs_brightnesss_slider_icon_color_active)
+        } else if (!isAutomatic && !translucentStyleEnabled) {
+            ContextCompat.getColor(context, R.color.qs_brightnesss_slider_icon_color_default)
         } else {
-            Utils.getColorAttrDefaultColor(context, android.R.attr.colorAccent)
+            ContextCompat.getColor(context, R.color.qs_brightnesss_slider_icon_color_translucent)
         }
         drawable?.setTint(tintColor)
     }
