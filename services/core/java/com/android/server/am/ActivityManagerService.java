@@ -19089,10 +19089,10 @@ public class ActivityManagerService extends IActivityManager.Stub
     
     @Override
     public boolean isThreeFingersSwipeActive() {
+        final boolean gestureActive = Settings.System.getInt(
+                mContext.getContentResolver(), "three_finger_gesture_active", 0) != 0;
         synchronized (this) {
-            return Settings.System.getInt(
-                mContext.getContentResolver(),
-                "three_finger_gesture_active", 0) != 0;
+            return gestureActive;
         }
     }
     

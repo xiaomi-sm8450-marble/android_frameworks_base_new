@@ -24,6 +24,8 @@ import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.WindowManagerPolicyConstants.PointerEventListener;
 
+import lineageos.providers.LineageSettings;
+
 public class ThreeFingersSwipeListener implements PointerEventListener {
 
     private static final String TAG = "ThreeFingersSwipeListener";
@@ -65,6 +67,7 @@ public class ThreeFingersSwipeListener implements PointerEventListener {
 
     @Override
     public void onPointerEvent(MotionEvent event) {
+        if (!threeFingerFeatureEnabled()) return;
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             mDownTime = event.getDownTime();
             changeThreeGestureState(THREE_GESTURE_STATE_NONE);
@@ -119,6 +122,11 @@ public class ThreeFingersSwipeListener implements PointerEventListener {
     }
     
     private void changeThreeGestureState(int state) {
+        if (!threeFingerFeatureEnabled()) {
+            Settings.System.putInt(mContext.getContentResolver(), 
+                "three_finger_gesture_active", 0);
+            return;
+        }
         if (mThreeGestureState != state) {
             mThreeGestureState = state;
             boolean isGestureActive = mThreeGestureState == THREE_GESTURE_STATE_DETECTED_TRUE
@@ -127,6 +135,16 @@ public class ThreeFingersSwipeListener implements PointerEventListener {
             Settings.System.putInt(mContext.getContentResolver(), 
                 "three_finger_gesture_active", isGestureActive ? 1 : 0);
         }
+    }
+
+    private boolean threeFingerFeatureEnabled() {
+        final boolean threeFingerGestureEnabled = LineageSettings.System.getInt(
+                mContext.getContentResolver(), 
+                LineageSettings.System.KEY_THREE_FINGERS_SWIPE_ACTION, 0) != 0;
+        final boolean threeFingerLongPressEnabled = LineageSettings.System.getInt(
+                mContext.getContentResolver(), 
+                LineageSettings.System.KEY_THREE_FINGERS_LONG_PRESS_ACTION, 0) != 0;
+        return (threeFingerGestureEnabled || threeFingerLongPressEnabled);
     }
 
     private boolean checkIsStartThreeGesture(MotionEvent event) {
