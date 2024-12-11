@@ -23,7 +23,6 @@ import android.database.ContentObserver
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Handler
 import android.os.UserHandle
 import android.provider.Settings
@@ -34,6 +33,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 
@@ -47,8 +47,6 @@ import com.android.systemui.Dependency
 import com.android.systemui.res.R
 import com.android.systemui.plugins.ActivityStarter
 import com.android.systemui.statusbar.NotificationListener
-import com.android.systemui.statusbar.policy.ConfigurationController
-import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener
 import com.android.systemui.util.ColorUtils
 import com.android.systemui.util.NotificationUtils
 
@@ -56,9 +54,10 @@ class PeekDisplayView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : ConstraintLayout(context, attrs, defStyleAttr), 
-    NotificationListener.NotificationHandler, 
-    ConfigurationController.ConfigurationListener {
+) : ConstraintLayout(context, attrs, defStyleAttr) {
+
+    private var PEEK_DISPLAY_LOCATION_TOP = 0
+    private var PEEK_DISPLAY_LOCATION_BOTTOM = 1
 
     private var notificationShelf: RecyclerView? = null
     private var notificationCard: CardView? = null
@@ -67,32 +66,31 @@ class PeekDisplayView @JvmOverloads constructor(
     private var notificationSummary: TextView? = null
     private var notificationHeader: TextView? = null
     private var overflowText: TextView? = null
-    private var clearAllButton: ImageView? = null
+    private var clearAllButton: ImageButton? = null
     private var minimizeButton: ImageView? = null
     private var dismissButton: ImageView? = null
     private var clearAllHandler: Handler = Handler()
     private var currentDisplayedNotification: StatusBarNotification? = null
+    public var currentRankingMap: NotificationListenerService.RankingMap? = null
+    private var lastFilteredNotifications: List<StatusBarNotification> = emptyList()
+    private var lastLayoutWidth: Int = ViewGroup.LayoutParams.WRAP_CONTENT
 
     private val notificationAdapter: NotificationAdapter = NotificationAdapter()
 
     private val activityStarter: ActivityStarter = Dependency.get(ActivityStarter::class.java)
-    private val configurationController: ConfigurationController = Dependency.get(ConfigurationController::class.java)
-    private val notificationListener: NotificationListener = Dependency.get(NotificationListener::class.java)
+    public val notificationListener: NotificationListener = Dependency.get(NotificationListener::class.java)
+    private val mController: PeekDisplayViewController = PeekDisplayViewController.getInstance()
 
-    private var isPeekDisplayEnabled = false
+    private var allowPrivateNotifications = true
+    private var isMinimalStyleEnabled = false
+    public var isPeekDisplayEnabled = false
     private var showOverflow = false
-    private var mDozing = false
-    private var mPulsing = false
-
-    private val settingsObserver: ContentObserver = object : ContentObserver(null) {
-        override fun onChange(selfChange: Boolean, uri: Uri?) {
-            super.onChange(selfChange, uri)
-            updatePeekDisplayState()
-        }
-    }
+    public var peekDisplayLocation = PEEK_DISPLAY_LOCATION_BOTTOM
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.peek_display, this, true)
+        val layout = if (id == R.id.peek_display_top) R.layout.peek_display_top 
+            else R.layout.peek_display_bottom 
+        LayoutInflater.from(context).inflate(layout, this, true)
         notificationShelf = findViewById(R.id.notificationShelf)
         notificationCard = findViewById(R.id.notificationCard)
         notificationIcon = findViewById(R.id.notificationIcon)
@@ -110,7 +108,6 @@ class PeekDisplayView @JvmOverloads constructor(
                 hideNotificationCard()
             }
         }
-        notificationListener.addNotificationHandler(this)
         minimizeButton?.setOnClickListener { hideNotificationCard() }
         dismissButton?.setOnClickListener { removeCurrentNotification() }
         overflowText?.setOnClickListener { showClearAllButton() }
@@ -162,28 +159,48 @@ class PeekDisplayView @JvmOverloads constructor(
     fun updateNotificationShelf(notificationList: List<StatusBarNotification>) {
         val sortedNotifications = notificationList.sortedByDescending { it.postTime }
         val filteredNotifications = sortedNotifications.filter { sbn ->
+            val ranking = currentRankingMap?.getRawRankingObject(sbn.key)
+            val shouldFilterSensitiveNotifications = !allowPrivateNotifications && (ranking?.hasSensitiveContent() == true)
             val (title, content) = NotificationUtils.resolveNotificationContent(sbn)
-            !sbn.isOngoing() && (sbn.notification.flags and Notification.FLAG_FOREGROUND_SERVICE == 0) && 
+            !sbn.isOngoing() && 
+            !sbn.notification.isFgsOrUij() && 
+            !sbn.notification.isMediaNotification() &&
+            (sbn.notification.flags and Notification.FLAG_FOREGROUND_SERVICE == 0) && 
+            !shouldFilterSensitiveNotifications &&
             (title.isNotBlank() || content.isNotBlank())
         }
+        if (filteredNotifications == lastFilteredNotifications) {
+            return
+        }
+        lastFilteredNotifications = filteredNotifications
+        notificationAdapter.clearSelection()
         if (filteredNotifications.isNotEmpty()) {
             notificationAdapter.submitList(filteredNotifications)
             notificationShelf?.visibility = View.VISIBLE
         } else {
             notificationShelf?.visibility = View.GONE
         }
-        val iconSize = context.resources.getDimensionPixelSize(R.dimen.peek_display_notification_icon_size)
         val iconMarginEnd = context.resources.getDimensionPixelSize(R.dimen.peek_display_notification_icon_margin_end)
-        val layoutParams = notificationShelf?.layoutParams as? ViewGroup.LayoutParams
-        if (filteredNotifications.size <= 4) {
-            layoutParams?.width = ViewGroup.LayoutParams.WRAP_CONTENT
+        val newWidth = if (filteredNotifications.size <= 4) {
+            ViewGroup.LayoutParams.WRAP_CONTENT
         } else {
-            layoutParams?.width = (4 * iconSize) + (4 * iconMarginEnd)
+            (4 * getIconSize(context)) + (4 * iconMarginEnd)
         }
-        notificationShelf?.layoutParams = layoutParams
+        if (newWidth != lastLayoutWidth) {
+            val layoutParams = notificationShelf?.layoutParams as? ViewGroup.LayoutParams
+            layoutParams?.width = newWidth
+            notificationShelf?.layoutParams = layoutParams
+            lastLayoutWidth = newWidth
+        }
         showOverflow = (filteredNotifications.size > 4)
         overflowText?.visibility = if (showOverflow) View.VISIBLE else View.GONE
         clearAllButton?.visibility = View.GONE
+    }
+    
+    private fun getIconSize(ctx: Context): Int {
+        return ctx.resources.getDimensionPixelSize(
+                if (isMinimalStyleEnabled) R.dimen.peek_display_notification_icon_size_minimal 
+                else R.dimen.peek_display_notification_icon_size)
     }
 
     private fun toggleNotificationDetails(sbn: StatusBarNotification) {
@@ -203,11 +220,17 @@ class PeekDisplayView @JvmOverloads constructor(
             } catch (e: Exception) {
                 packageName
             }
-            val headerText = if (subText.isNotBlank()) {
-                "$subText • $appLabel • $timeSinceArrival"
+
+            val maxLength = 17
+            val subHeaderText = if (subText.length > maxLength) subText.take(maxLength) + "..." else subText
+            val appLabelHeaderText = if (appLabel.length > maxLength) appLabel.take(maxLength) + "..." else appLabel
+
+            val headerText = if (subHeaderText.isNotBlank()) {
+                "$subHeaderText • $appLabelHeaderText • $timeSinceArrival"
             } else {
-                "$appLabel • $timeSinceArrival"
+                "$appLabelHeaderText • $timeSinceArrival"
             }
+            
             notificationHeader?.text = headerText
             notificationTitle?.text = title
             notificationSummary?.text = content
@@ -226,6 +249,7 @@ class PeekDisplayView @JvmOverloads constructor(
                 ?.setDuration(300L)
                 ?.setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
                 ?.start()
+            Settings.System.putIntForUser(context.contentResolver, "peek_display_expanded", 1, UserHandle.USER_CURRENT)
         }
     }
     
@@ -251,8 +275,12 @@ class PeekDisplayView @JvmOverloads constructor(
             activityStarter.startActivity(it, true)
         }
     }
+    
+    fun resetNotificationShelf() {
+        notificationShelf?.scrollToPosition(0)
+    }
 
-    private fun hideNotificationCard() {
+    fun hideNotificationCard() {
         notificationCard?.animate()
             ?.scaleX(0.8f)
             ?.scaleY(0.8f)
@@ -260,79 +288,54 @@ class PeekDisplayView @JvmOverloads constructor(
             ?.setDuration(200L)
             ?.setInterpolator(android.view.animation.AccelerateInterpolator())
             ?.withEndAction {
-                notificationCard?.visibility = View.GONE
+                notificationCard?.visibility = if (peekDisplayLocation == PEEK_DISPLAY_LOCATION_TOP) View.GONE else View.INVISIBLE
                 currentDisplayedNotification = null
             }
             ?.start()
-    }
-
-    override fun onNotificationPosted(
-        sbn: StatusBarNotification,
-        rankingMap: NotificationListenerService.RankingMap
-    ) {
-        if (sbn.isOngoing() || (sbn.notification.flags and Notification.FLAG_FOREGROUND_SERVICE != 0)) {
-            return
-        }
-        updateNotificationShelf(notificationListener.getActiveNotifications().toList())
-    }
-
-    override fun onNotificationRemoved(
-        sbn: StatusBarNotification,
-        rankingMap: NotificationListenerService.RankingMap,
-        reason: Int
-    ) {
-        updateNotificationShelf(notificationListener.getActiveNotifications().toList())
-    }
-    
-    override fun onNotificationRemoved(
-        sbn: StatusBarNotification,
-        rankingMap: NotificationListenerService.RankingMap
-    ) {
-        updateNotificationShelf(notificationListener.getActiveNotifications().toList())
-    }
-
-    override fun onNotificationRankingUpdate(rankingMap: NotificationListenerService.RankingMap) {}
-    override fun onNotificationsInitialized() {}
-
-    override fun onUiModeChanged() {
-        updateViewColors()
-    }
-    
-    override fun onThemeChanged() {
-        updateViewColors()
+            Settings.System.putIntForUser(context.contentResolver, "peek_display_expanded", 0, UserHandle.USER_CURRENT)
+            notificationAdapter.clearSelection()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        configurationController.addCallback(this)
-        context.contentResolver.registerContentObserver(
-            Settings.Secure.getUriFor("peek_display_notifications"), false, settingsObserver)
+        mController.setPeekDisplayView(this)
+        mController.registerCallbacks()
         updatePeekDisplayState()
-        updateViewColors()
-        updateNotificationShelf(notificationListener.getActiveNotifications().toList())
     }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        configurationController.removeCallback(this)
-        context.contentResolver.unregisterContentObserver(settingsObserver)
-    }
-
-    private fun updatePeekDisplayState() {
+    fun updatePeekDisplayState() {
+        allowPrivateNotifications = Settings.Secure.getIntForUser(
+                    context.contentResolver,
+                    Settings.Secure.LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS,
+                    1,
+                    UserHandle.USER_CURRENT
+                ) == 1
+        isMinimalStyleEnabled = Settings.Secure.getIntForUser(context.contentResolver,
+            "peek_display_style", 0, UserHandle.USER_CURRENT) == 1
         isPeekDisplayEnabled = Settings.Secure.getIntForUser(context.contentResolver,
             "peek_display_notifications", 0, UserHandle.USER_CURRENT) == 1
+        peekDisplayLocation = Settings.Secure.getIntForUser(context.contentResolver,
+            "peek_display_location", PEEK_DISPLAY_LOCATION_BOTTOM, UserHandle.USER_CURRENT)
         visibility = if (isPeekDisplayEnabled) View.VISIBLE else View.GONE
+        if (isPeekDisplayEnabled) {
+            updateNotificationShelf(notificationListener.getActiveNotifications().toList())
+            updateViewColors()
+        }
     }
 
-    private fun updateViewColors() {
-        val surfaceColor = ColorUtils.getSurfaceColor(context)
-        val primaryColor = ColorUtils.getPrimaryColor(context)
-        notificationCard?.setCardBackgroundColor(surfaceColor)
-        notificationTitle?.setTextColor(primaryColor)
+    fun updateViewColors() {
+        val surfaceColor = if (isMinimalStyleEnabled) Color.TRANSPARENT else ColorUtils.getSurfaceColor(context)
+        val primaryColor = if (isMinimalStyleEnabled) Color.WHITE else ColorUtils.getPrimaryColor(context)
+        val primaryTextColor = ColorUtils.getPrimaryColor(context)
+        notificationCard?.setCardBackgroundColor(ColorUtils.getSurfaceColor(context))
+        clearAllButton?.backgroundTintList = ColorStateList.valueOf(surfaceColor)
+        notificationTitle?.setTextColor(primaryTextColor)
         notificationSummary?.setTextColor(ColorUtils.getSecondaryColor(context))
-        notificationHeader?.setTextColor(primaryColor)
+        notificationHeader?.setTextColor(primaryTextColor)
+        overflowText?.setTextColor(if (isMinimalStyleEnabled) Color.WHITE else surfaceColor)
         minimizeButton?.imageTintList = ColorStateList.valueOf(primaryColor)
         dismissButton?.imageTintList = ColorStateList.valueOf(primaryColor)
+        clearAllButton?.imageTintList = ColorStateList.valueOf(primaryColor)
         notificationAdapter.notifyDataSetChanged()
         notificationShelf?.invalidate()
     }
@@ -357,12 +360,17 @@ class PeekDisplayView @JvmOverloads constructor(
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationViewHolder {
             val iconView = ImageView(parent.context).apply {
-                val iconSize = parent.context.resources.getDimensionPixelSize(R.dimen.peek_display_notification_icon_size)
+                val iconSize = getIconSize(parent.context)
                 layoutParams = RecyclerView.LayoutParams(iconSize, iconSize).apply {
                     marginEnd = parent.context.resources.getDimensionPixelSize(R.dimen.peek_display_notification_icon_margin_end)
                 }
+                background = createBackgroundDrawable(if (isMinimalStyleEnabled) Color.TRANSPARENT 
+                    else ColorUtils.getSurfaceColor(parent.context))
+                val padding = if (isMinimalStyleEnabled) 0 else parent.context.resources.getDimensionPixelSize(R.dimen.peek_notification_icon_padding)
+                setPadding(padding, padding, padding, padding)
                 isClickable = true
-                imageTintList = ColorStateList.valueOf(Color.WHITE)
+                imageTintList = ColorStateList.valueOf(if (isMinimalStyleEnabled) Color.WHITE 
+                    else ColorUtils.getPrimaryColor(parent.context))
             }
             return NotificationViewHolder(iconView)
         }
@@ -372,12 +380,47 @@ class PeekDisplayView @JvmOverloads constructor(
             val context = holder.iconView.context
             val iconDrawable = NotificationUtils.resolveSmallIcon(notification, context)
             holder.iconView.setImageDrawable(iconDrawable)
+            val isSelected = selectedPosition == position
+            val newColor = if (isSelected) ColorUtils.getActiveColor(context) else ColorUtils.getSurfaceColor(context)
+            val newTint = if (isSelected) ColorUtils.getSurfaceColor(context) else ColorUtils.getPrimaryColor(context)
+            holder.iconView.imageTintList = ColorStateList.valueOf(if (isMinimalStyleEnabled) Color.WHITE else newTint)
+            holder.iconView.background = createBackgroundDrawable(if (isMinimalStyleEnabled) Color.TRANSPARENT else newColor)
             holder.iconView.setOnClickListener {
-                toggleNotificationDetails(notification)
+                if (isMinimalStyleEnabled) {
+                    toggleNotificationDetails(notification)
+                } else {
+                    if (isSelected) {
+                        selectedPosition = RecyclerView.NO_POSITION
+                        notifyItemChanged(position)
+                        hideNotificationCard()
+                    } else {
+                        val prevSelectedPosition = selectedPosition
+                        selectedPosition = position
+                        notifyItemChanged(prevSelectedPosition)
+                        notifyItemChanged(position)
+                        toggleNotificationDetails(notification)
+                    }
+                }
+            }
+        }
+
+        fun clearSelection() {
+            val previousSelectedPosition = selectedPosition
+            selectedPosition = RecyclerView.NO_POSITION
+            if (previousSelectedPosition != RecyclerView.NO_POSITION) {
+                notifyItemChanged(previousSelectedPosition)
             }
         }
 
         override fun getItemCount(): Int = notifications.size
+
+        private fun createBackgroundDrawable(color: Int): GradientDrawable {
+            return GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(color)
+                cornerRadius = resources.getDimension(R.dimen.peek_notification_icon_corner_radius)
+            }
+        }
 
         inner class NotificationViewHolder(val iconView: ImageView) : RecyclerView.ViewHolder(iconView)
     }

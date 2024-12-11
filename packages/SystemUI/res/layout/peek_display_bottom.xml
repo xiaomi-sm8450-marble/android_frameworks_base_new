@@ -20,51 +20,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:color/transparent">
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/notificationShelf"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal"
-        android:scrollbars="none"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-    <TextView
-        android:id="@+id/overflowText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="•"
-        android:textSize="28sp"
-        android:visibility="gone"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@id/notificationShelf"
-        app:layout_constraintTop_toTopOf="@id/notificationShelf"
-        app:layout_constraintBottom_toBottomOf="@id/notificationShelf"
-        android:layout_marginEnd="8dp" />
-    <ImageView
-        android:id="@+id/clearAllButton"
-        android:layout_width="@dimen/peek_display_notification_icon_size"
-        android:layout_height="@dimen/peek_display_notification_icon_size"
-        android:src="@drawable/ic_clear_all_24px"
-        android:visibility="gone"
-        android:tint="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@id/notificationShelf"
-        app:layout_constraintTop_toTopOf="@id/notificationShelf"
-        app:layout_constraintBottom_toBottomOf="@id/notificationShelf" />
     <androidx.cardview.widget.CardView
         android:id="@+id/notificationCard"
         android:layout_width="match_parent"
         android:layout_height="@dimen/peek_notification_card_height"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="12dp"
-        android:layout_marginHorizontal="16dp"
-        android:visibility="gone"
+        android:layout_margin="16dp"
+        android:visibility="invisible"
         android:clickable="true"
-        app:layout_constraintTop_toBottomOf="@id/notificationShelf"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:cardElevation="8dp"
         app:cardCornerRadius="28dp">
         <ScrollView
@@ -77,8 +40,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center_vertical"
-                android:paddingTop="8dp"
-                android:paddingHorizontal="16dp">
+                android:padding="16dp">
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -157,4 +119,39 @@
             </LinearLayout>
         </ScrollView>
     </androidx.cardview.widget.CardView>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/notificationShelf"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingVertical="12dp"
+        android:paddingHorizontal="6dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/notificationCard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <TextView
+        android:id="@+id/overflowText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="•"
+        android:textSize="28sp"
+        android:visibility="gone"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/notificationShelf"
+        app:layout_constraintTop_toTopOf="@id/notificationShelf"
+        app:layout_constraintBottom_toBottomOf="@id/notificationShelf"
+        android:layout_marginEnd="8dp" />
+    <ImageButton
+        android:id="@+id/clearAllButton"
+        android:layout_width="@dimen/peek_display_notification_icon_size"
+        android:layout_height="@dimen/peek_display_notification_icon_size"
+        android:padding="@dimen/peek_notification_icon_padding"
+        android:src="@drawable/ic_clear_all_24px"
+        android:background="@drawable/rounded_bg_full"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@id/notificationShelf"
+        app:layout_constraintTop_toTopOf="@id/notificationShelf"
+        app:layout_constraintBottom_toBottomOf="@id/notificationShelf" />
 </androidx.constraintlayout.widget.ConstraintLayout>

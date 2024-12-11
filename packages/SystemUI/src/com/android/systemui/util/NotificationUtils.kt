@@ -50,7 +50,7 @@ object NotificationUtils {
     fun resolveNotificationIcon(sbn: StatusBarNotification, context: Context): Drawable? {
         return try {
             val extras = sbn.notification.extras
-
+            
             getAvatarIcon(sbn)?.let { return it.loadDrawable(context) }
 
             val iconObject = sequenceOf(
