@@ -65,7 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
     </com.android.systemui.notifications.ui.PeekDisplayHolderLinearLayout>
-        
+
     <LinearLayout
         android:id="@id/keyguard_indication_area"
         android:layout_width="match_parent"
@@ -129,6 +129,17 @@
         android:background="@drawable/keyguard_bottom_affordance_bg"
         android:foreground="@drawable/keyguard_bottom_affordance_selected_border"
         android:visibility="invisible" />
+
+    <LinearLayout
+        android:id="@+id/now_bar_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:orientation="vertical">
+            <com.android.keyguard.NowBarHolder
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+    </LinearLayout>
 
     <include
         android:id="@+id/keyguard_settings_button"
