@@ -3633,6 +3633,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
     }
 
     private boolean startScrollIfNeeded(int x, int y, MotionEvent vtev) {
+        notifyExpensiveFrame();
         // Check if we have moved far enough that it looks more like a
         // scroll than a tap
         final int deltaY = y - mMotionY;
@@ -4985,6 +4986,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         // Use AbsListView#fling(int) instead
         @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.P)
         void start(int initialVelocity) {
+            notifyExpensiveFrame();
             int initialY = initialVelocity < 0 ? Integer.MAX_VALUE : 0;
             mLastFlingY = initialY;
             mScroller.setInterpolator(null);
@@ -5008,6 +5010,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         }
 
         void startSpringback() {
+            notifyExpensiveFrame();
             mSuppressIdleStateChangeCall = false;
             if (mScroller.springBack(0, mScrollY, 0, 0, 0, 0)) {
                 mTouchMode = TOUCH_MODE_OVERFLING;
@@ -5020,6 +5023,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
         }
 
         void startOverfling(int initialVelocity) {
+            notifyExpensiveFrame();
             mScroller.setInterpolator(null);
             mScroller.fling(0, mScrollY, 0, initialVelocity, 0, 0,
                     Integer.MIN_VALUE, Integer.MAX_VALUE, 0, getHeight());
@@ -5053,6 +5057,7 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
 
         void startScroll(int distance, int duration, boolean linear,
                 boolean suppressEndFlingStateChangeCall) {
+            notifyExpensiveFrame();
             int initialY = distance < 0 ? Integer.MAX_VALUE : 0;
             mLastFlingY = initialY;
             mScroller.setInterpolator(linear ? sLinearInterpolator : null);
@@ -5223,6 +5228,12 @@ public abstract class AbsListView extends AdapterView<ListAdapter> implements Te
                 break;
             }
             }
+        }
+    }
+    
+    void notifyExpensiveFrame() {
+        if (getViewRootImpl() != null) {
+            getViewRootImpl().notifyRendererOfExpensiveFrame();
         }
     }
 
