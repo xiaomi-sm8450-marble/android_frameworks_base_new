@@ -105,6 +105,9 @@ interface ShadeViewController {
     /** Blocks gestural navigation */
     fun setBlockedGesturalNavigation(blocked: Boolean)
 
+    fun getScrollerLayoutController(): com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayoutController?
+    fun getKeyguardBottomAreaView(): com.android.systemui.statusbar.phone.KeyguardBottomAreaView?
+
     companion object {
         /**
          * Returns a multiplicative factor to use when determining the falsing threshold for touches
