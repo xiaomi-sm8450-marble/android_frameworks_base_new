@@ -3012,6 +3012,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                 mHandler.sendMessageDelayed(mHandler.obtainMessage(H.RECHECK, mRow),
                         USER_ATTEMPT_GRACE_PERIOD);
             }
+            mVolumeUtils.playSoundForStreamType(mRow.stream);
         }
     }
 
