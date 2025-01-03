@@ -7217,8 +7217,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         KeyEvent.KEYCODE_SYSRQ, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
                         KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_TOUCHSCREEN);
                 performKeyAction(mShakeGestureAction, event);
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, false,
-                        "Shake Gesture");
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, "Shake Gesture");
             }
         });
         mShakeGestures.onStart();
