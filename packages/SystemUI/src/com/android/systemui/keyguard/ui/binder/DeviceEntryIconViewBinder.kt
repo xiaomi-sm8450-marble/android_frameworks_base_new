@@ -54,7 +54,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import android.provider.Settings
 import android.os.UserHandle
-import com.android.internal.util.crdroid.Utils
+import com.android.internal.util.android.Utils
 
 @ExperimentalCoroutinesApi
 object DeviceEntryIconViewBinder {
