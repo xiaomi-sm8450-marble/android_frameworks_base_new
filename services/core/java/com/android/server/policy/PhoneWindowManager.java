@@ -7235,8 +7235,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         KeyEvent.KEYCODE_SYSRQ, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
                         KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_TOUCHSCREEN);
                 performKeyAction(threeFingersSwipeAction, event);
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, false,
-                        "Three Fingers Swipe");
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, "Three Fingers Swipe");
             }
             @Override
             public void onLongPressThreeFingers() {
@@ -7250,8 +7249,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         KeyEvent.KEYCODE_SYSRQ, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
                         KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_TOUCHSCREEN);
                 performKeyAction(threeFingersLongPressAction, event);
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, false,
-                        "Three Fingers Long Press");
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, "Three Fingers Long Press");
             }
         });
         
