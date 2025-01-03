@@ -149,7 +149,6 @@ import com.android.systemui.util.RoundedCornerProgressDrawable;
 import com.android.systemui.util.settings.SecureSettings;
 import com.android.systemui.volume.domain.interactor.VolumeDialogInteractor;
 import com.android.systemui.volume.domain.interactor.VolumePanelNavigationInteractor;
-import com.android.systemui.volume.panel.shared.flag.VolumePanelFlag;
 import com.android.systemui.volume.ui.binder.VolumeDialogMenuIconBinder;
 import com.android.systemui.volume.ui.navigation.VolumeNavigator;
 
@@ -353,7 +352,6 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
     private final VibratorHelper mVibratorHelper;
     private final com.android.systemui.util.time.SystemClock mSystemClock;
     private final VolumeDialogMenuIconBinder mVolumeDialogMenuIconBinder;
-    private final VolumePanelFlag mVolumePanelFlag;
     private final VolumeDialogInteractor mInteractor;
     // Optional actions for soundDose
     private Optional<ImmutableList<CsdWarningAction>>
@@ -373,7 +371,6 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             CsdWarningDialog.Factory csdWarningDialogFactory,
             DevicePostureController devicePostureController,
             Looper looper,
-            VolumePanelFlag volumePanelFlag,
             DumpManager dumpManager,
             Lazy<SecureSettings> secureSettings,
             VibratorHelper vibratorHelper,
@@ -414,7 +411,6 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
         mSecureSettings = secureSettings;
         mVolumeDialogMenuIconBinder = volumeDialogMenuIconBinder;
         mDialogTimeoutMillis = DIALOG_TIMEOUT_MILLIS;
-        mVolumePanelFlag = volumePanelFlag;
         mInteractor = interactor;
 
         dumpManager.registerDumpable("VolumeDialogImpl", this);
@@ -1672,9 +1668,6 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
     }
 
     private void updateODICaptionsH(boolean isServiceComponentEnabled, boolean fromTooltip) {
-        // don't show captions view when the new volume panel is enabled.
-        isServiceComponentEnabled =
-                isServiceComponentEnabled && !mVolumePanelFlag.canUseNewVolumePanel();
         if (mODICaptionsView != null) {
             mODICaptionsView.setVisibility(isServiceComponentEnabled ? VISIBLE : GONE);
         }

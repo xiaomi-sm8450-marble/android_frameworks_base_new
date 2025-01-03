@@ -89,7 +89,6 @@ import com.android.systemui.util.settings.SecureSettings;
 import com.android.systemui.util.time.FakeSystemClock;
 import com.android.systemui.volume.domain.interactor.VolumeDialogInteractor;
 import com.android.systemui.volume.domain.interactor.VolumePanelNavigationInteractor;
-import com.android.systemui.volume.panel.shared.flag.VolumePanelFlag;
 import com.android.systemui.volume.ui.binder.VolumeDialogMenuIconBinder;
 import com.android.systemui.volume.ui.navigation.VolumeNavigator;
 
@@ -125,6 +124,7 @@ public class VolumeDialogImplTest extends SysuiTestCase {
     View mDrawerNormal;
     ViewGroup mDialogRowsView;
     CaptionsToggleImageButton mODICaptionsIcon;
+
     private TestableLooper mTestableLooper;
     private ConfigurationController mConfigurationController;
     private int mOriginalOrientation;
@@ -156,8 +156,6 @@ public class VolumeDialogImplTest extends SysuiTestCase {
     private VolumeNavigator mVolumeNavigator;
     @Mock
     private VolumeDialogMenuIconBinder mVolumeDialogMenuIconBinder;
-    @Mock
-    private VolumePanelFlag mVolumePanelFlag;
     @Mock
     private VolumeDialogInteractor mVolumeDialogInteractor;
 
@@ -221,7 +219,6 @@ public class VolumeDialogImplTest extends SysuiTestCase {
                 mCsdWarningDialogFactory,
                 mPostureController,
                 mTestableLooper.getLooper(),
-                mVolumePanelFlag,
                 mDumpManager,
                 mLazySecureSettings,
                 mVibratorHelper,
