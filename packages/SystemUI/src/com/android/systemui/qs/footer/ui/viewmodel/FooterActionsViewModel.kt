@@ -149,7 +149,7 @@ class FooterActionsViewModel(
                 globalActionsDialogLite,
                 activityStarter,
                 showPowerButton,
-                keyguardStateController,
+                keyguardStateController
             )
         }
 
@@ -175,6 +175,7 @@ class FooterActionsViewModel(
                 globalActionsDialogLite,
                 activityStarter,
                 showPowerButton,
+                keyguardStateController
             )
         }
     }
