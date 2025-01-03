@@ -15,8 +15,6 @@
  */
 package com.android.server.policy;
 
-import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -447,8 +445,7 @@ public class AiAssistantGestureListener implements PointerEventListener {
         mActivityOptions.setLaunchBounds(launchBounds);
         mActivityOptions.setTaskAlwaysOnTop(true);
         mActivityOptions.setSplashScreenStyle(SplashScreen.SPLASH_SCREEN_STYLE_ICON);
-        mActivityOptions.setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-        mActivityOptions.setPendingIntentBackgroundActivityLaunchAllowedByPermission(true);
+        mActivityOptions.setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS);
         try {
             Intent startAppIntent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
             if (startAppIntent == null) return;
