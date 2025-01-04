@@ -445,7 +445,7 @@ public abstract class MediaOutputBaseDialog extends SystemUIDialog
                 mAppResourceIcon.setVisibility(View.GONE);
             }
         }
-        int mediaColor = mMediaOutputController.getColorItemContent();
+        int mediaColor = mMediaSwitchingController.getColorItemContent();
         mNexticon.setColorFilter(mediaColor);
         mPlayIcon.setColorFilter(mediaColor);
         mPrevIcon.setColorFilter(mediaColor);
