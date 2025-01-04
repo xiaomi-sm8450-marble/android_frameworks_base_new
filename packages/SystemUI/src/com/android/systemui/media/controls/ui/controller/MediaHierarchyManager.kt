@@ -124,15 +124,6 @@ constructor(
     private val logger: MediaViewLogger,
 ) {
 
-    /** Track the media player setting status on lock screen. */
-    private var allowMediaPlayerOnLockScreen: Boolean = true
-    private val lockScreenMediaPlayerUri =
-        secureSettings.getUriFor(Settings.Secure.MEDIA_CONTROLS_LOCK_SCREEN)
-    private val peekDisplayUri =
-        systemSettings.getUriFor("peek_display_expanded")
-    private val nowBarUri =
-        systemSettings.getUriFor("keyguard_now_bar_enabled")
-
     /**
      * Whether we "skip" QQS during panel expansion.
      *
@@ -624,40 +615,6 @@ constructor(
                 }
             }
         }
-
-        val settingsObserver: ContentObserver =
-            object : ContentObserver(handler) {
-                override fun onChange(selfChange: Boolean, uri: Uri?) {
-                    if (uri == lockScreenMediaPlayerUri || uri == nowBarUri || uri == peekDisplayUri) {
-                        val isNowBarEnabled = systemSettings.getBoolForUser(
-                                "keyguard_now_bar_enabled",
-                                false,
-                                UserHandle.USER_CURRENT
-                            )
-                        val isPeekDisplayExpanded = systemSettings.getBoolForUser(
-                                "peek_display_expanded",
-                                false,
-                                UserHandle.USER_CURRENT
-                            )
-                        val lsControlsEnabled = secureSettings.getBoolForUser(
-                                Settings.Secure.MEDIA_CONTROLS_LOCK_SCREEN,
-                                true,
-                                UserHandle.USER_CURRENT
-                            )
-                        allowMediaPlayerOnLockScreen = lsControlsEnabled && !isPeekDisplayExpanded && !isNowBarEnabled
-                    }
-                }
-            }
-        secureSettings.registerContentObserverForUserSync(
-            Settings.Secure.MEDIA_CONTROLS_LOCK_SCREEN,
-            settingsObserver,
-            UserHandle.USER_ALL
-        )
-        systemSettings.registerContentObserverForUserSync(
-            "keyguard_now_bar_enabled",
-            settingsObserver,
-            UserHandle.USER_ALL
-        )
 
         // Listen to the communal UI state. Make sure that communal UI is showing and hub itself is
         // available, ie. not disabled and able to be shown.
@@ -1262,7 +1219,7 @@ constructor(
                 // Communal does not have its own StatusBarState so it should always have higher
                 // priority for the UMO over the lockscreen.
                 isCommunalShowing -> LOCATION_COMMUNAL_HUB
-                onLockscreen && allowMediaPlayerOnLockScreen -> LOCATION_LOCKSCREEN
+                onLockscreen && isMediaAllowedOnLockScreen() -> LOCATION_LOCKSCREEN
                 else -> LOCATION_QQS
             }
         // When we're on lock screen and the player is not active, we should keep it in QS.
@@ -1339,12 +1296,31 @@ constructor(
         mediaCarouselController.mediaCarouselScrollHandler.visibleToUser =
             shadeVisible && mediaVisible
     }
+    
+    private fun isMediaAllowedOnLockScreen(): Boolean {
+        val isNowBarEnabled = systemSettings.getBoolForUser(
+                "keyguard_now_bar_enabled",
+                false,
+                UserHandle.USER_CURRENT
+            )
+        val isPeekDisplayExpanded = systemSettings.getBoolForUser(
+                "peek_display_expanded",
+                false,
+                UserHandle.USER_CURRENT
+            )
+        val lsControlsEnabled = secureSettings.getBoolForUser(
+                Settings.Secure.MEDIA_CONTROLS_LOCK_SCREEN,
+                true,
+                UserHandle.USER_CURRENT
+            )
+        return lsControlsEnabled && !isPeekDisplayExpanded && !isNowBarEnabled
+    }
 
     private fun isLockScreenVisibleToUser(): Boolean {
         return !statusBarStateController.isDozing &&
             !keyguardViewController.isBouncerShowing &&
             statusBarStateController.state == StatusBarState.KEYGUARD &&
-            allowMediaPlayerOnLockScreen &&
+            isMediaAllowedOnLockScreen() &&
             statusBarStateController.isExpanded &&
             !qsExpanded
     }
