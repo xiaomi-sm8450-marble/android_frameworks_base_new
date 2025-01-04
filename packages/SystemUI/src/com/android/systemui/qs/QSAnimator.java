@@ -38,6 +38,7 @@ import com.android.systemui.qs.QSPanel.QSTileLayout;
 import com.android.systemui.qs.TouchAnimator.Builder;
 import com.android.systemui.qs.dagger.QSScope;
 import com.android.systemui.qs.tileimpl.HeightOverrideable;
+import com.android.systemui.tuner.TunerService;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 
 import java.util.ArrayList;
@@ -140,6 +141,7 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     private float mLastPosition;
     private final QSHost mHost;
     private final DelayableExecutor mExecutor;
+    private final TunerService mTunerService;
     private boolean mShowCollapsedOnKeyguard;
     private int mQQSTop;
     private boolean isA11Style;
@@ -152,13 +154,15 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
             QSPanelController qsPanelController,
             QuickQSPanelController quickQSPanelController, QSHost qsTileHost,
             @Main DelayableExecutor executor,
-            QSExpansionPathInterpolator qsExpansionPathInterpolator) {
+            QSExpansionPathInterpolator qsExpansionPathInterpolator,
+            TunerService tunerService) {
         mQsRootView = rootView;
         mQuickQsPanel = quickPanel;
         mQsPanelController = qsPanelController;
         mQuickQSPanelController = quickQSPanelController;
         mHost = qsTileHost;
         mExecutor = executor;
+        mTunerService = tunerService;
         mQSExpansionPathInterpolator = qsExpansionPathInterpolator;
         mHost.addCallback(this);
         mQsPanelController.addOnAttachStateChangeListener(this);
@@ -280,7 +284,7 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     }
 
     private void updateAnimators() {
-        isA11Style = com.android.internal.util.systemui.qs.QSLayoutUtils.getQsUiStyle(mHost.getContext()) != 0;
+        isA11Style = TileUtils.getQsUiStyle(mHost.getContext()) != 0;
         mNeedsAnimatorUpdate = false;
         TouchAnimator.Builder firstPageBuilder = new Builder();
         TouchAnimator.Builder translationYBuilder = new Builder();
