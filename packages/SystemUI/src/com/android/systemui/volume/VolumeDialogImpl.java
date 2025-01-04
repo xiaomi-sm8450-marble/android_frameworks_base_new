@@ -1522,7 +1522,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             mAppVolumeIcon.setOnClickListener(v -> {
                 Events.writeEvent(Events.EVENT_SETTINGS_CLICK);
                 dismissH(DISMISS_REASON_SETTINGS_CLICKED);
-                mMediaOutputDialogFactory.dismiss();
+                mMediaOutputDialogManager.dismiss();
                 mVolumeNavigator.openVolumePanel(
                         mVolumePanelNavigationInteractor.getAppVolumeRoute());
             });
