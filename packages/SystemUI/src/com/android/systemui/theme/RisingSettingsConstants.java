@@ -82,7 +82,8 @@ public class RisingSettingsConstants {
     };
     
     public static final String[] SYSTEM_SETTINGS_NOTIFY_ONLY_KEYS = {
-        VOLUME_STYLE
+        VOLUME_STYLE,
+        "qs_split_shade_enabled"
     };
     
     public static final String[] SECURE_SETTINGS_NOTIFY_ONLY_KEYS = {
