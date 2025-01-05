@@ -38,6 +38,8 @@ import com.android.settingslib.display.BrightnessUtils.convertLinearToGammaFloat
 
 import com.android.systemui.res.R
 
+import kotlinx.coroutines.*
+
 import kotlin.math.roundToInt
 
 class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
@@ -92,12 +94,7 @@ class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
 
     override fun onUserSwipe() {
         setBrightnessFromUser()
-        val brightnessHapticsIntensity = Settings.System.getIntForUser(context.getContentResolver(),
-                Settings.System.QS_BRIGHTNESS_SLIDER_HAPTIC, 0, UserHandle.USER_CURRENT)
-        performSliderHaptics(brightnessHapticsIntensity)
     }
-
-    override fun onUserInteractionEnd() {}
     
     override fun onLongPress() {
         toggleBrightnessMode()
@@ -107,11 +104,14 @@ class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
         super.onFinishInflate()
         brightnessIcon = findViewById(R.id.qs_controls_brightness_slider_icon)
         brightnessIcon?.bringToFront()
+        setIconView(brightnessIcon)
+        updateBrightnessIcon()
         setBrightnessFromSystem()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        setSliderHapticKey(Settings.System.QS_BRIGHTNESS_SLIDER_HAPTIC, 0)
         setBrightnessFromSystem()
     }
 
@@ -120,18 +120,12 @@ class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
         mContentResolver.unregisterContentObserver(mBrightnessObserver)
         displayManager.unregisterDisplayListener(mDisplayListener)
     }
-
-    override fun updateSliderPaint() {
-        super.updateSliderPaint()
-        updateBrightnessIcon()
-    }
     
     private fun setBrightnessFromSystem() {
+        if (isUserInteracting) return
         val newProgress = (getCurrentBrightness() * 100).roundToInt()
         setSliderProgress(newProgress)
-        progressRect.top = (1 - newProgress / 100f) * measuredHeight
-        updateBrightnessIcon()
-        invalidate()
+        updateProgressRectAnimate()
     }
 
     private fun toggleBrightnessMode() {
@@ -161,7 +155,6 @@ class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
     private fun updateBrightnessIcon() {
         brightnessIcon?.apply {
             setImageResource(if (isAutomaticBrightnessEnabled()) R.drawable.ic_qs_brightness_auto_on_new else R.drawable.ic_qs_brightness_auto_off_new)
-            updateIconTint(this)
         }
     }
 
@@ -194,15 +187,14 @@ class BrightnessSlider(context: Context, attrs: AttributeSet? = null) :
     }
     
     private fun setBrightnessFromUser() {
-        val displayId = context.getDisplayId()
-        val brightnessValue = getLinearBrightnessValue()
-        displayManager.setTemporaryBrightness(displayId, brightnessValue)
-        displayManager.setBrightness(displayId, brightnessValue)
-        updateProgressRect()
-    }
-
-    override fun updateProgressRect() {
-        super.updateProgressRect()
-        updateBrightnessIcon()
+        scope.launch {
+            val displayId = context.getDisplayId()
+            val brightnessValue = getLinearBrightnessValue()
+            displayManager.setTemporaryBrightness(displayId, brightnessValue)
+            displayManager.setBrightness(displayId, brightnessValue)
+            withContext(Dispatchers.Main) {
+                updateProgressRect()
+            }
+        }
     }
 }
