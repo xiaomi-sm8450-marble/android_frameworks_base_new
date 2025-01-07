@@ -337,6 +337,7 @@ public class ImageWallpaper extends WallpaperService {
                         int dimLevel = SystemProperties.getInt("persist.sys.wallpaper.dim_level", 10);
                         bitmap = WallpaperUtils.getDimmedBitmap(bitmap, dimLevel);
                     }
+                    bitmap = WallpaperUtils.compress(bitmap);
                     canvas.drawBitmap(bitmap, null, dest, null);
                     mDrawn = true;
                 } finally {
