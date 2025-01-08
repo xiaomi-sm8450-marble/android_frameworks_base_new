@@ -20,6 +20,8 @@ import static com.android.systemui.statusbar.notification.TransformState.TRANSFO
 
 import android.app.Notification;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.util.ArraySet;
 import android.view.NotificationHeaderView;
 import android.view.NotificationTopLineView;
@@ -203,6 +205,18 @@ public class NotificationHeaderViewWrapper extends NotificationViewWrapper imple
         addRemainingTransformTypes();
         updateCropToPaddingForImageViews();
         Notification n = row.getEntry().getSbn().getNotification();
+        String pkgname = row.getEntry().getSbn().getPackageName();
+        boolean mQsColoredIconsEnabled = android.provider.Settings.System.getIntForUser(
+            mView.getContext().getContentResolver(), "qs_colored_icons", 0, android.os.UserHandle.USER_CURRENT) != 0;
+        Drawable appIcon = pkgname != null ?
+                    getApplicationIcon(pkgname) : null;
+        if (appIcon != null && mWorkProfileImage != null && mQsColoredIconsEnabled) {
+            mIcon.setImageDrawable(appIcon);
+            mWorkProfileImage.setImageIcon(n.getSmallIcon());
+            // The work profile image is always the same lets just set the icon tag for it not to
+            // animate
+            mWorkProfileImage.setTag(ImageTransformState.ICON_TAG, n.shouldUseAppIcon() ? n.getAppIcon() : n.getSmallIcon());
+        }
         if (n.shouldUseAppIcon()) {
             mIcon.setTag(ImageTransformState.ICON_TAG, n.getAppIcon());
         } else {
@@ -218,6 +232,17 @@ public class NotificationHeaderViewWrapper extends NotificationViewWrapper imple
                 mTransformationHelper.resetTransformedView(view);
             }
         }
+    }
+
+    private Drawable getApplicationIcon(String packageName) {
+        PackageManager pm = mView.getContext().getPackageManager();
+        Drawable icon = null;
+        try {
+            icon = pm.getApplicationIcon(packageName);
+        } catch (Exception e) {
+            // nothing to do
+        }
+        return icon;
     }
 
     /**

@@ -62,7 +62,8 @@ public class RisingSettingsConstants {
         "lockscreen_widgets_style",
         "qs_widgets_enabled",
         "qs_tile_label_size",
-        "qs_tile_summary_size"
+        "qs_tile_summary_size",
+        "qs_colored_icons"
     };
     
     public static final String[] SECURE_SETTINGS_KEYS = {
