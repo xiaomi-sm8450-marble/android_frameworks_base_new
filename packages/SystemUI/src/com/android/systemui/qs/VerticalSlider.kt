@@ -347,13 +347,4 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
             }
         }
     }
-    
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        mHandler.removeCallbacksAndMessages(null)
-        progressAnimator?.cancel()
-        progressAnimator = null
-        listeners.clear()
-        setOnTouchListener(null)
-    }
 }
