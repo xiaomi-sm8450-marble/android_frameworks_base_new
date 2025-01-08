@@ -15,7 +15,6 @@
  */
 package com.android.systemui.qs
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.ColorStateList
@@ -30,52 +29,39 @@ import android.os.UserHandle
 import android.provider.Settings
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.animation.DecelerateInterpolator
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.cardview.widget.CardView
 import com.android.systemui.res.R
-
 import kotlin.math.abs
-import kotlin.math.roundToInt
-
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-
 import com.android.internal.util.android.VibrationUtils
 
 interface UserInteractionListener {
+    fun onUserInteractionEnd()
     fun onLongPress()
     fun onUserSwipe()
 }
 
 open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardView(context, attrs) {
 
-    protected val scope = CoroutineScope(Dispatchers.IO)
-
     private val listeners: MutableList<UserInteractionListener> = mutableListOf()
     
     private val horizontalSwipeThreshold = context.resources.getDimensionPixelSize(R.dimen.qs_slider_swipe_threshold_dp)
-    
-    private var iconView: ImageView? = null
-    private var hapticsKey: String = ""
-    private var hapticDefValue: Int = 0
-    private var progressAnimator: ValueAnimator? = null
 
-    private var moved = false
-    private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
-    private val mHandler = Handler()
-    private var isLongPress = false
-    private val longPressRunnable = Runnable {
-            isLongPress = true
-        }
-
-    protected var isUserInteracting = false
+    private val longPressTimeout = 800
+    private val longPressHandler = Handler()
+    private val longPressRunnable: Runnable = Runnable {
+        doLongPressAction()
+    }
+    private var isLongPressDetected = false
+    private val longPressThreshold = 10f
 
     protected var progress: Int = 0
-    protected var lastProgress: Int = 0
+        set(value) {
+            field = value.coerceIn(0, 100)
+        }
     private val cornerRadius = context.resources.getDimensionPixelSize(R.dimen.qs_controls_slider_corner_radius).toFloat()
     private val layoutRect: RectF = RectF()
     protected val progressRect: RectF = RectF()
@@ -92,6 +78,9 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
         xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
     }
     private val path = Path()
+    private var lastX: Float = 0f
+    private var lastY: Float = 0f
+    private var lastProgress: Int = 0
     private val threshold = 0.05f
     private var actionPerformed = false
 
@@ -101,61 +90,46 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
     private val isNightMode: Boolean
         get() = true // on default qs we always use dark mode
 
-    private val mTouchListener = object : View.OnTouchListener {
-        private var initY = 0f
-        private var initPct = 0f
-
-        override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
-            when (motionEvent.action) {
+    init {
+        setOnTouchListener { view, event ->
+            when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    progressAnimator?.cancel()
-                    initY = motionEvent.y
-                    initPct = 1 - (initY / view.height)
-                    isUserInteracting = true
+                    isLongPressDetected = false
                     actionPerformed = false
-                    isLongPress = false
-                    moved = false
-                    mHandler.postDelayed(longPressRunnable, longPressTimeout)
-                    return true
+                    startLongPressDetection(event)
+                    lastX = event.x
+                    lastY = event.y
+                    lastProgress = progress
+                    requestDisallowInterceptTouchEventFromParentsAndRoot(true)
+                    false
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!moved && isLongPress) {
-                        doLongPressAction()
-                        return true
+                    val deltaX = abs(lastX - event.x)
+                    val deltaY = abs(lastY - event.y)
+                    if (deltaX > horizontalSwipeThreshold) {
+                        requestDisallowInterceptTouchEventFromParentsAndRoot(false)
+                    } else {
+                        requestDisallowInterceptTouchEventFromParentsAndRoot(true)
+                        if (isLongPress(event, deltaX, deltaY)) {
+                            isLongPressDetected = true
+                            doLongPressAction()
+                        } else {
+                            cancelLongPressDetection()
+                            val progressDelta = ((lastY - event.y) * 100 / measuredHeight.toFloat()).toInt()
+                            progress = (lastProgress + progressDelta).coerceIn(0, 100)
+                            notifyListenersUserSwipe()
+                        }
                     }
-                    val newPct = 1 - (motionEvent.y / view.height)
-                    val deltaPct = abs(newPct - initPct)
-                    if (deltaPct > 0.03f) {
-                        moved = true
-                        isLongPress = false
-                        mHandler.removeCallbacks(longPressRunnable)
-                        view.parent.requestDisallowInterceptTouchEvent(true)
-                        progress = (newPct * 100).coerceIn(0f, 100f).toInt()
-                        lastProgress = progress
-                        notifyListenersUserSwipe()
-                        performSliderHaptics()
-                        updateProgressRect()
-                    }
-                    return true
+                    true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    mHandler.removeCallbacks(longPressRunnable)
-                    if (isLongPress) {
-                        isLongPress = false
-                    } else if (moved) {
-                        moved = false
-                    }
-                    updateProgressRect()
-                    mHandler.postDelayed({ isUserInteracting = false }, 200)
-                    return true
+                    notifyListenersUserInteractionEnd()
+                    cancelLongPressDetection()
+                    true
                 }
-                else -> return false
+                else -> false
             }
         }
-    }
-
-    init {
-        setOnTouchListener(mTouchListener)
         backgroundTintList = ColorStateList.valueOf(
             context.getResources().getColor(if (isNightMode) R.color.qs_controls_container_bg_color_dark
             else R.color.qs_controls_container_bg_color_light)
@@ -165,15 +139,7 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
         updateSliderPaint()
     }
 
-    fun setSliderHapticKey(key: String, defValue: Int) {
-        hapticsKey = key
-        hapticDefValue = defValue
-    }
-
-    fun performSliderHaptics() {
-        if (hapticsKey.isEmpty()) return
-        val intensity = Settings.System.getIntForUser(context.getContentResolver(),
-                hapticsKey, hapticDefValue, UserHandle.USER_CURRENT)
+    fun performSliderHaptics(intensity: Int) {
         if (intensity == 0) return
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastVibrateTime >= SLIDER_HAPTICS_TIMEOUT) {
@@ -182,13 +148,28 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
         }
     }
 
+    private fun startLongPressDetection(event: MotionEvent) {
+        longPressHandler.postDelayed(longPressRunnable, longPressTimeout.toLong())
+    }
+
     private fun doLongPressAction() {
-        if (isLongPress && !actionPerformed) {
+        if (isLongPressDetected && !actionPerformed) {
             listeners.forEach { it.onLongPress() }
             VibrationUtils.triggerVibration(context, 4)
             actionPerformed = true
-            isLongPress = false
+            isLongPressDetected = false
         }
+    }
+
+    private fun cancelLongPressDetection() {
+        longPressRunnable?.let { longPressHandler.removeCallbacks(it) }
+        isLongPressDetected = false
+    }
+
+    private fun isLongPress(event: MotionEvent, deltaX: Float, deltaY: Float): Boolean {
+        val pressDuration = event.eventTime - event.downTime
+        val distanceMoved = Math.sqrt((deltaX * deltaX + deltaY * deltaY).toDouble()).toFloat()
+        return pressDuration >= longPressTimeout && distanceMoved < longPressThreshold
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -208,6 +189,10 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
 
     fun removeUserInteractionListener(listener: UserInteractionListener) {
         listeners.remove(listener)
+    }
+
+    private fun notifyListenersUserInteractionEnd() {
+        listeners.forEach { it.onUserInteractionEnd() }
     }
 
     private fun notifyListenersUserSwipe() {
@@ -274,21 +259,16 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
             if (isNightMode) R.color.qs_controls_active_color_dark 
             else R.color.qs_controls_active_color_light
         )
-        progressPaint.alpha = (progressAlpha * 255).roundToInt()
+        progressPaint.alpha = (progressAlpha * 255).toInt()
         layoutPaint.color = context.getColor(
             if (isNightMode) R.color.qs_controls_container_bg_color_dark 
             else R.color.qs_controls_container_bg_color_light
         )
-        layoutPaint.alpha = (backgroundAlpha * 255).roundToInt()
-        updateIconTint()
+        layoutPaint.alpha = (backgroundAlpha * 255).toInt()
         invalidate()
     }
 
-    fun setIconView(iv: ImageView?) {
-        iconView = iv
-    }
-
-    fun updateIconTint() {
+    fun updateIconTint(view: ImageView?) {
         val emptyThreshold = 20 // 20% of 100
         val isEmpty = progress <= emptyThreshold
         val iconColorRes = when {
@@ -300,51 +280,37 @@ open class VerticalSlider(context: Context, attrs: AttributeSet? = null) : CardV
                 else R.color.qs_controls_active_color_dark
         }
         val color = context.getResources().getColor(iconColorRes)
-        iconView?.setColorFilter(color, PorterDuff.Mode.SRC_IN)
+        view?.setColorFilter(color, PorterDuff.Mode.SRC_IN)
     }
     
     fun setSliderProgress(sliderProgress: Int) {
-        progress = sliderProgress.coerceIn(0, 100)
+        progress = sliderProgress
     }
 
     protected open fun updateProgressRect() {
         val calculatedProgress = progress / 100f
         val newTop = (1 - calculatedProgress) * measuredHeight
-        val progressDelta = newTop - progressRect.top
-        val smoothingFactor = when {
-            progress < 10 || progress > 90 -> 0.05f
-            else -> 0.1f
-        }
-        if (abs(progressDelta) > measuredHeight * threshold) {
-            progressRect.top += progressDelta * smoothingFactor
-            postInvalidateOnAnimation()
-        } else {
+        if (abs(newTop - progressRect.top) > measuredHeight * threshold) {
             progressRect.top = newTop
-            invalidate()
+        } else {
+            progressRect.top += (newTop - progressRect.top) * 0.1f
         }
-        updateIconTint()
+        invalidate()
     }
-    
-    protected open fun updateProgressRectAnimate() {
-        if (progress == lastProgress) return
-        progressAnimator?.cancel()
-        if (progressAnimator == null || !progressAnimator!!.isRunning) {
-            progressAnimator = ValueAnimator.ofInt(lastProgress, progress)
-            progressAnimator?.apply {
-                duration = 80
-                interpolator = DecelerateInterpolator()
-                addUpdateListener { animator ->
-                    val animatedValue = animator.animatedValue as Int
-                    progress = animatedValue
-                    lastProgress = animatedValue
-                    val calculatedProgress = progress / 100f
-                    val newTop = (1 - calculatedProgress) * measuredHeight
-                    progressRect.top = newTop
-                    updateIconTint()
-                    postInvalidateOnAnimation()
-                }
-                start()
-            }
+
+    private fun requestDisallowInterceptTouchEventFromParentsAndRoot(disallowIntercept: Boolean) {
+        var parentView = this.parent
+        while (parentView != null && parentView !is ViewGroup) {
+            parentView = parentView.parent
         }
+        if (parentView != null) {
+            parentView.requestDisallowInterceptTouchEvent(disallowIntercept)
+        }
+
+        var rootView = this.rootView
+        while (rootView != null && rootView.parent != null && rootView.parent is View) {
+            rootView = rootView.parent as View
+        }
+        rootView?.parent?.requestDisallowInterceptTouchEvent(disallowIntercept)
     }
 }
