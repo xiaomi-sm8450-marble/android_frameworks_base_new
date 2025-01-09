@@ -93,14 +93,4 @@ public class WallpaperUtils {
         blurScript.destroy();
         return Bitmap.createScaledBitmap(outputBitmap, bitmap.getWidth(), bitmap.getHeight(), true);
     }
-    
-    public static Bitmap compress(Bitmap bitmap) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        boolean compressed = bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 100, byteArrayOutputStream);
-        if (compressed) {
-            byte[] byteArray = byteArrayOutputStream.toByteArray();
-            return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
-        }
-        return bitmap;
-    }
 }
