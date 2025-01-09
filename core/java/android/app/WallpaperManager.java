@@ -1040,17 +1040,9 @@ public class WallpaperManager {
         boolean returnDefault = which != FLAG_LOCK;
         Bitmap bm = sGlobals.peekWallpaperBitmap(mContext, returnDefault, which, cmProxy);
         if (bm != null) {
-            java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream();
-            boolean compressionSuccess = bm.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 100, byteArrayOutputStream);
-            if (compressionSuccess) {
-                byte[] webpData = byteArrayOutputStream.toByteArray();
-                Bitmap webpBitmap = BitmapFactory.decodeByteArray(webpData, 0, webpData.length);
-                if (webpBitmap != null) {
-                    Drawable dr = new BitmapDrawable(mContext.getResources(), webpBitmap);
-                    dr.setDither(false);
-                    return dr;
-                }
-            }
+            Drawable dr = new BitmapDrawable(mContext.getResources(), bm);
+            dr.setDither(false);
+            return dr;
         }
         return null;
     }
@@ -2315,7 +2307,7 @@ public class WallpaperManager {
                 FileOutputStream fos = null;
                 try {
                     fos = new ParcelFileDescriptor.AutoCloseOutputStream(fd);
-                    fullImage.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 90, fos);
+                    fullImage.compress(Bitmap.CompressFormat.PNG, 90, fos);
                     fos.close();
                     completion.waitForCompletion();
                 } finally {
@@ -2374,7 +2366,7 @@ public class WallpaperManager {
                 FileOutputStream fos = null;
                 try {
                     fos = new ParcelFileDescriptor.AutoCloseOutputStream(fd);
-                    fullImage.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 90, fos);
+                    fullImage.compress(Bitmap.CompressFormat.PNG, 90, fos);
                     fos.close();
                     completion.waitForCompletion();
                 } finally {
