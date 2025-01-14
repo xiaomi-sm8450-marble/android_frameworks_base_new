@@ -107,7 +107,7 @@ public class FileHeaderProvider implements
             bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
         }
         try (java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream()) {
-            boolean success = bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 90, byteArrayOutputStream);
+            boolean success = bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, byteArrayOutputStream);
             if (success) {
                 byte[] compressedBitmapData = byteArrayOutputStream.toByteArray();
                 mImage = new BitmapDrawable(mContext.getResources(),
