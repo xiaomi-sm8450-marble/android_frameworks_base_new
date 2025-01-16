@@ -1012,6 +1012,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
             state.setCustomScrimAlpha(mCustomScrimAlpha);
         }
         applyState();
+        updateNotificationScrimVisibility();
     }
 
     private void applyState() {
@@ -1785,9 +1786,11 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
     
     private void updateNotificationScrimVisibility() {
         if (mNotificationsScrim == null) return;
+        boolean hideNotifScrim = (mCustomScrimAlpha <= 0.4f 
+            || (com.android.systemui.qs.TileUtils.canShowSplitShade(mScrimBehind.getContext()) 
+            && mIsLandscape));
         mNotificationsScrim.setVisibility(
-            com.android.systemui.qs.TileUtils.canShowSplitShade(mScrimBehind.getContext()) 
-            && mIsLandscape 
+            hideNotifScrim
             ? View.GONE : View.VISIBLE);
     }
 
