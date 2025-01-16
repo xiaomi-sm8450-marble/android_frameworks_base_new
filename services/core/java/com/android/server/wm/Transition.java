@@ -1459,7 +1459,7 @@ class Transition implements BLASTSyncEngine.TransactionReadyListener {
         SurfaceControl.Transaction inputSinkTransaction = null;
         for (int i = 0; i < mParticipants.size(); ++i) {
             final ActivityRecord ar = mParticipants.valueAt(i).asActivityRecord();
-            if (ar == null || !ar.isVisible() || ar.getParent() == null) continue;
+            if (ar == null || ar.getParent() == null) continue;
             if (inputSinkTransaction == null) {
                 inputSinkTransaction = ar.mWmService.mTransactionFactory.get();
             }
