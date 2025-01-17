@@ -54,6 +54,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
@@ -133,6 +134,7 @@ import com.android.systemui.haptics.slider.SeekableSliderTrackerConfig;
 import com.android.systemui.haptics.slider.SeekbarHapticPlugin;
 import com.android.systemui.haptics.slider.SliderHapticFeedbackConfig;
 import com.android.systemui.media.dialog.MediaOutputDialogManager;
+import com.android.systemui.plugins.ActivityStarter;
 import com.android.systemui.plugins.VolumeDialog;
 import com.android.systemui.plugins.VolumeDialogController;
 import com.android.systemui.plugins.VolumeDialogController.State;
@@ -1482,6 +1484,18 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                     }
                     mVolumeNavigator.openVolumePanel(
                             mVolumePanelNavigationInteractor.getVolumePanelRoute());
+                }
+            });
+            mExpandRows.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    Events.writeEvent(Events.EVENT_SETTINGS_CLICK);
+                    dismissH(DISMISS_REASON_SETTINGS_CLICKED);
+                    mMediaOutputDialogManager.dismiss();
+                    Intent intent = new Intent(Settings.ACTION_SOUND_SETTINGS);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    com.android.systemui.Dependency.get(ActivityStarter.class).startActivity(intent, /* dismissShade= */ true);
+                    return true;
                 }
             });
         }
