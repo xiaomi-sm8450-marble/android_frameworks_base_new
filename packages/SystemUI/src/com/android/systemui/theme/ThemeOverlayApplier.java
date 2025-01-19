@@ -134,6 +134,9 @@ public class ThemeOverlayApplier implements Dumpable {
     @VisibleForTesting
     static final String OVERLAY_CATEGORY_POWER_MENU =
             "android.theme.customization.powermenu";
+    @VisibleForTesting
+    static final String OVERLAY_CATEGORY_BRIGHTNESS_BAR =
+            "android.theme.customization.brightness";
 
     /*
      * All theme customization categories used by the system, in order that they should be applied,
@@ -170,7 +173,8 @@ public class ThemeOverlayApplier implements Dumpable {
             OVERLAY_CATEGORY_LOCK_CLOCK_FONT,
             OVERLAY_CATEGORY_PROGRESS_BAR,
             OVERLAY_CATEGORY_NOTIFICATION,
-            OVERLAY_CATEGORY_POWER_MENU);
+            OVERLAY_CATEGORY_POWER_MENU,
+            OVERLAY_CATEGORY_BRIGHTNESS_BAR);
 
     /* Allowed overlay categories for each target package. */
     private final Map<String, Set<String>> mTargetPackageToCategories = new ArrayMap<>();
@@ -217,6 +221,7 @@ public class ThemeOverlayApplier implements Dumpable {
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_PROGRESS_BAR, ANDROID_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_NOTIFICATION, SYSUI_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_POWER_MENU, SYSUI_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_BRIGHTNESS_BAR, SYSUI_PACKAGE);
 
         dumpManager.registerDumpable(TAG, this);
     }
