@@ -22,6 +22,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.View
@@ -40,6 +42,9 @@ class EdgeLightView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeWidth = 20f
         isAntiAlias = true
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
     }
 
     private var animating = false
