@@ -50,6 +50,7 @@ import android.view.WindowManager;
 import android.window.WindowContainerTransaction;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.policy.ScreenDecorationsUtils;
 import com.android.wm.shell.R;
 import com.android.wm.shell.ShellTaskOrganizer;
 import com.android.wm.shell.common.DisplayController;
@@ -284,7 +285,8 @@ public class CaptionWindowDecoration extends WindowDecoration<WindowDecorLinearL
                 .getScaledTouchSlop();
 
         final Resources res = mResult.mRootView.getResources();
-        mDragResizeListener.setGeometry(new DragResizeWindowGeometry(0 /* taskCornerRadius */,
+        final int radius = (int) ScreenDecorationsUtils.getWindowCornerRadius(mResult.mRootView.getContext());
+        mDragResizeListener.setGeometry(new DragResizeWindowGeometry(radius /* taskCornerRadius */,
                 new Size(mResult.mWidth, mResult.mHeight), getResizeEdgeHandleSize(res),
                 getResizeHandleEdgeInset(res), getFineResizeCornerSize(res),
                 getLargeResizeCornerSize(res)), touchSlop);
